@@ -1,63 +1,76 @@
 ---
 import '@fontsource-variable/inter';
-
-// 'DM Sans'
-// Nunito
-// Dosis
-// Outfit
-// Roboto
-// Literata
-// 'IBM Plex Sans'
-// Karla
-// Poppins
-// 'Fira Sans'
-// 'Libre Franklin'
-// Inconsolata
-// Raleway
-// Oswald
-// 'Space Grotesk'
-// Urbanist
+import '@fontsource-variable/space-grotesk';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+import '@fontsource/jetbrains-mono/700.css';
 ---
 
 <style is:inline>
   :root {
     --aw-font-sans: 'Inter Variable';
     --aw-font-serif: 'Inter Variable';
-    --aw-font-heading: 'Inter Variable';
+    --aw-font-heading: 'Space Grotesk Variable';
+    --aw-font-mono: 'JetBrains Mono';
 
-    --aw-color-primary: rgb(1 97 239);
-    --aw-color-secondary: rgb(1 84 207);
-    --aw-color-accent: rgb(109 40 217);
+    /* Light — GitHub-canvas light */
+    --aw-color-primary: rgb(35 134 54); /* #238636 green */
+    --aw-color-secondary: rgb(26 106 43); /* #1a6a2b */
+    --aw-color-accent: rgb(130 82 217); /* #8252d9 purple */
 
-    --aw-color-text-heading: rgb(0 0 0);
-    --aw-color-text-default: rgb(16 16 16);
-    --aw-color-text-muted: rgb(16 16 16 / 66%);
+    --aw-color-text-heading: rgb(13 17 23); /* #0d1117 */
+    --aw-color-text-default: rgb(36 41 47); /* #24292f */
+    --aw-color-text-page: rgb(36 41 47);
+    --aw-color-text-muted: rgb(87 96 106); /* #57606a */
     --aw-color-bg-page: rgb(255 255 255);
+    --aw-color-bg-page-alt: rgb(246 248 250); /* #f6f8fa */
+    --aw-color-bg-page-dark: rgb(13 17 23);
 
-    --aw-color-bg-page-dark: rgb(3 6 32);
+    /* OpenAI4S custom tokens */
+    --o4s-amber: rgb(146 62 6); /* #923e06 — money moments (AA on light) */
+    --o4s-chip-fg: rgb(20 100 47); /* #14642f — darker green for AA on tint */
+    --o4s-border: rgb(208 215 222); /* #d0d7de */
+    --o4s-code-blue: rgb(4 102 173);
+    --o4s-code-bg: rgb(246 248 250);
+    --o4s-head-bg: rgb(246 248 250);
+    --o4s-glow: rgba(35, 134, 54, 0.1);
 
     ::selection {
-      background-color: lavender;
+      background-color: rgba(35, 134, 54, 0.18);
+      color: rgb(13 17 23);
     }
   }
 
   .dark {
     --aw-font-sans: 'Inter Variable';
     --aw-font-serif: 'Inter Variable';
-    --aw-font-heading: 'Inter Variable';
+    --aw-font-heading: 'Space Grotesk Variable';
+    --aw-font-mono: 'JetBrains Mono';
 
-    --aw-color-primary: rgb(1 97 239);
-    --aw-color-secondary: rgb(1 84 207);
-    --aw-color-accent: rgb(109 40 217);
+    /* Dark — GitHub-canvas dark, badge palette */
+    --aw-color-primary: rgb(63 185 80); /* #3fb950 */
+    --aw-color-secondary: rgb(46 160 67); /* #2ea043 */
+    --aw-color-accent: rgb(188 140 255); /* #bc8cff */
 
-    --aw-color-text-heading: rgb(247, 248, 248);
-    --aw-color-text-default: rgb(229 236 246);
-    --aw-color-text-muted: rgb(229 236 246 / 66%);
-    --aw-color-bg-page: rgb(3 6 32);
+    --aw-color-text-heading: rgb(230 237 243); /* #e6edf3 */
+    --aw-color-text-default: rgb(201 209 217); /* #c9d1d9 */
+    --aw-color-text-page: rgb(201 209 217);
+    --aw-color-text-muted: rgb(139 148 158); /* #8b949e */
+    --aw-color-bg-page: rgb(13 17 23); /* #0d1117 */
+    --aw-color-bg-page-alt: rgb(22 27 34); /* #161b22 */
+    --aw-color-bg-page-dark: rgb(13 17 23);
+
+    --o4s-amber: rgb(240 158 47); /* #f09e2f */
+    --o4s-chip-fg: rgb(63 185 80); /* #3fb950 */
+    --o4s-border: rgb(48 54 61); /* #30363d */
+    --o4s-code-blue: rgb(88 166 255); /* #58a6ff */
+    --o4s-code-bg: rgb(13 17 23);
+    --o4s-head-bg: rgb(22 27 34);
+    --o4s-glow: rgba(63, 185, 80, 0.12);
 
     ::selection {
-      background-color: black;
-      color: snow;
+      background-color: rgba(63, 185, 80, 0.3);
+      color: rgb(230 237 243);
     }
   }
 </style>

@@ -1,398 +1,620 @@
 ---
 import Layout from '~/layouts/PageLayout.astro';
-
-import Hero from '~/components/widgets/Hero.astro';
-import Note from '~/components/widgets/Note.astro';
-import Features from '~/components/widgets/Features.astro';
-import Features2 from '~/components/widgets/Features2.astro';
-import Steps from '~/components/widgets/Steps.astro';
-import Content from '~/components/widgets/Content.astro';
-import BlogLatestPosts from '~/components/widgets/BlogLatestPosts.astro';
-import FAQs from '~/components/widgets/FAQs.astro';
+import Features3 from '~/components/widgets/Features3.astro';
 import Stats from '~/components/widgets/Stats.astro';
-import CallToAction from '~/components/widgets/CallToAction.astro';
+import FAQs from '~/components/widgets/FAQs.astro';
+import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
+import Button from '~/components/ui/Button.astro';
+import CodeCard from '~/components/openai4s/CodeCard.astro';
+import DemoVideo from '~/components/openai4s/DemoVideo.astro';
+import { Image } from 'astro:assets';
+import arkPlan from '~/assets/openai4s/ark-plan.png';
+import penta from '~/assets/openai4s/penta.gif';
+import pentaFrame from '~/assets/openai4s/penta-frame.png';
+
+const GITHUB = 'https://github.com/PKU-YuanGroup/OpenAI4S';
+const ARCH = 'https://github.com/PKU-YuanGroup/OpenAI4S/blob/main/docs/architecture.md';
 
 const metadata = {
-  title: 'AstroWind — Free template for creating websites with Astro + Tailwind CSS',
+  title: 'OpenAI4S — Open AI for Scientist',
   ignoreTitleTemplate: true,
 };
+
+const altBg = 'background-color: var(--aw-color-bg-page-alt)';
+const altBgLayer = '<div class="absolute inset-0" style="background-color: var(--aw-color-bg-page-alt)"></div>';
+
+// ---- Hero notebook cell (highlighted HTML, rendered via set:html) ----
+const heroCode = `<pre><code><span class="tok-out">In [1]:</span> <span class="tok-kw">from</span> openai4s <span class="tok-kw">import</span> agent
+
+hits   = [f <span class="tok-kw">for</span> f <span class="tok-kw">in</span> files <span class="tok-kw">if</span> pattern <span class="tok-kw">in</span> <span class="tok-fn">host.read_file</span>(f)]
+top3   = <span class="tok-fn">sorted</span>(hits, key=os.path.getsize, reverse=<span class="tok-kw">True</span>)[:<span class="tok-num">3</span>]
+frames = [<span class="tok-fn">pd.read_csv</span>(f) <span class="tok-kw">for</span> f <span class="tok-kw">in</span> top3]
+<span class="tok-fn">host.save_artifact</span>(<span class="tok-fn">plot</span>(frames))<span class="o4s-cursor"></span>
+
+<span class="tok-out">Out[1]:</span> <span class="tok-str">&lt;DataFrame 100000×20&gt;</span> <span class="tok-com">stays resident — only the summary hits context</span></code></pre>`;
+
+// ---- Paradigm code cell ----
+const paradigmCode = `<pre><code><span class="tok-com"># ReAct: ~14 round-trips (read → … → filter → sort → plot).   OpenAI4S: one code cell.</span>
+hits   = [f <span class="tok-kw">for</span> f <span class="tok-kw">in</span> files <span class="tok-kw">if</span> pattern <span class="tok-kw">in</span> <span class="tok-fn">host.read_file</span>(f)]
+top3   = <span class="tok-fn">sorted</span>(hits, key=os.path.getsize, reverse=<span class="tok-kw">True</span>)[:<span class="tok-num">3</span>]
+frames = [<span class="tok-fn">pd.read_csv</span>(f) <span class="tok-kw">for</span> f <span class="tok-kw">in</span> top3]      <span class="tok-com"># a 100k-row DataFrame stays in the kernel...</span>
+<span class="tok-fn">host.save_artifact</span>(<span class="tok-fn">plot</span>(frames))             <span class="tok-com"># ...only "&lt;DataFrame 100000×20&gt;" hits context</span></code></pre>`;
+
+// ---- Quickstart terminal ----
+const quickstart = `<pre><code><span class="tok-com">$</span> git clone https://github.com/PKU-YuanGroup/OpenAI4S <span class="tok-kw">&amp;&amp;</span> cd OpenAI4S
+<span class="tok-com">$</span> ./setup.sh     <span class="tok-com"># one-time: build the environment with uv</span>
+<span class="tok-com">$</span> ./start.sh     <span class="tok-com"># launch the web UI at http://127.0.0.1:8760/</span></code></pre>`;
+
+const cmpRows = [
+  { a: 'Action unit', r: 'One tool call (JSON)', c: '<strong>An arbitrary program</strong> (a code cell)' },
+  { a: 'Action space', r: 'A fixed menu of tools', c: '<strong>A Turing-complete language</strong> (Python / R)' },
+  {
+    a: 'Loops &amp; composition',
+    r: 'Orchestrated over many round-trips',
+    c: 'Done <strong>in one cell</strong> — <code>for</code>, <code>if</code>, comprehensions',
+  },
+  {
+    a: 'Intermediate state',
+    r: "Lives in the model's context (text)",
+    c: 'Lives in <strong>kernel memory</strong> (real objects)',
+  },
+  { a: 'Big objects', r: 'Serialized back into context', c: 'Stay resident; <strong>only a summary returns</strong>' },
+  { a: 'N operations', r: '≈ N model round-trips', c: '<strong>One round-trip</strong> can do many steps' },
+  { a: 'Extending tools', r: 'Change the schema + the host', c: '<code>import</code> a library, or read a Skill' },
+];
+
+const providers = {
+  ark: ['doubao', 'glm', 'kimi', 'deepseek', 'minimax'],
+  official: ['chatgpt', 'claude', 'gemini'],
+};
+
+// Real skill directory names from the OpenAI4S repo (skills/). 14 GPU/model = structure + seq/omics/docking + design.
+const skillGroups = [
+  { label: 'Structure prediction', items: ['alphafold2', 'openfold3', 'boltz', 'chai1', 'esmfold2'] },
+  { label: 'Sequence · omics · docking', items: ['fair-esm2', 'evo2', 'borzoi', 'scgpt', 'scvi-tools', 'diffdock'] },
+  { label: 'Protein design', items: ['proteinmpnn', 'ligandmpnn', 'solublempnn'] },
+  {
+    label: 'Research workflow + platform',
+    items: [
+      'literature-review',
+      'paper-narrative',
+      'indication-dossier',
+      'pdf-explore',
+      'figure-composer',
+      'figure-style',
+      'example_stats',
+      'remote-compute-ssh',
+      'remote-compute-nvidia',
+      'using-model-endpoint',
+    ],
+  },
+];
+
+const demos = [
+  {
+    src: '/demos/demo-01.mp4',
+    poster: '/demos/demo-01-poster.jpg',
+    label: 'session · uniprot→structure',
+    caption: 'Live API workflow — from UniProt / RCSB to a 3D structure & report',
+  },
+  {
+    src: '/demos/demo-05.mp4',
+    poster: '/demos/demo-05-poster.jpg',
+    label: 'session · insulin P01308',
+    caption: 'Real-data analysis — human insulin INS (P01308): a reproducible report',
+  },
+  {
+    src: '/demos/demo-02.mp4',
+    poster: '/demos/demo-02-poster.jpg',
+    label: 'session · artifact edit',
+    caption: 'Visual artifact editing — “raise the confidence cutoff to 75” in one line',
+  },
+  {
+    src: '/demos/demo-06.mp4',
+    poster: '/demos/demo-06-poster.jpg',
+    label: 'session · chart edit',
+    caption: 'Annotation-driven chart editing — lasso a region & recolor the legend',
+  },
+  {
+    src: '/demos/demo-03.mp4',
+    poster: '/demos/demo-03-poster.jpg',
+    label: 'session · plan mode',
+    caption: 'Plan-mode research — artemisinin & paclitaxel solubility prediction',
+  },
+  {
+    src: '/demos/demo-04.mp4',
+    poster: '/demos/demo-04-poster.jpg',
+    label: 'session · protein design',
+    caption: 'Protein engineering — from sequence to ranked mutants & structural rationale',
+  },
+];
+
+const hostChips = [
+  'host.web_search',
+  'host.bash',
+  'host.read_file',
+  'host.llm',
+  'host.delegate',
+  'host.compute',
+  'host.fold',
+  'host.save_artifact',
+];
 ---
 
 <Layout metadata={metadata}>
-  <!-- Hero Widget ******************* -->
+  <!-- ======================= HERO ======================= -->
+  <section class="relative not-prose overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+      <div class="o4s-grid absolute inset-0"></div>
+      <div class="o4s-glow absolute inset-0"></div>
+    </div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-20 lg:py-24">
+      <div class="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+        <div class="text-center lg:text-left min-w-0">
+          <p class="o4s-prompt mb-4">In[1]: from openai4s import agent</p>
+          <h1
+            class="text-4xl md:text-5xl xl:text-6xl font-bold font-heading tracking-tight leading-[1.06] text-gray-900 dark:text-white"
+          >
+            Code is the action.<br />
+            <span class="text-primary">The kernel is the environment.</span>
+          </h1>
+          <p class="mt-5 text-lg md:text-xl text-muted max-w-xl mx-auto lg:mx-0">
+            An open-source, <span class="font-semibold">Code-as-Action</span> scientific research agent. It emits a cell of
+            real Python/R into a persistent Jupyter-style kernel — <span class="font-semibold">not</span> a
+            <code class="o4s-chip">tool_use</code> JSON menu. A Turing-complete action space, driven by a model key that costs
+            <span class="font-semibold" style="color: var(--o4s-amber)">¥9.9/month (≈ US$1.4)</span>.
+          </p>
+          <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            <Button variant="primary" href={GITHUB} target="_blank" icon="tabler:star" text="Star on GitHub" />
+            <a href="#quickstart" class="btn-ghost" aria-label="Jump to the quickstart">$ git clone && ./start.sh</a>
+          </div>
+          <p class="mt-6 o4s-prompt text-muted" style="color: var(--aw-color-text-muted)">
+            MIT · pure stdlib · 206 tests passing · open-sourced 2026-07-06
+          </p>
+        </div>
+        <div class="w-full min-w-0">
+          <CodeCard label="kernel · python3" live="alive">
+            <Fragment set:html={heroCode} />
+          </CodeCard>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <Hero
-    actions={[
-      {
-        variant: 'primary',
-        text: 'Get template',
-        href: 'https://github.com/arthelokyo/astrowind',
-        target: '_blank',
-        icon: 'tabler:download',
-      },
-      { text: 'Learn more', href: '#features' },
-    ]}
-    image={{ src: '~/assets/images/hero-image.png', alt: 'AstroWind Hero Image' }}
-  >
-    <Fragment slot="title">
-      Free template for <span class="hidden xl:inline">creating websites with</span>
-      <span class="text-accent dark:text-white"> Astro v6</span> + Tailwind CSS
-    </Fragment>
+  <!-- ================= PROVIDERS (Brands) ================= -->
+  <section style={altBg} class="border-y border-[color:var(--o4s-border)]">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-12 text-center">
+      <h2 class="text-lg font-semibold text-default">
+        One <code class="o4s-chip">host.llm</code>, every model.
+      </h2>
+      <p class="text-muted text-sm mt-2">Switch providers from the UI — no code change.</p>
+      <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <span class="o4s-prompt mr-1">ark:</span>
+        {providers.ark.map((p) => <span class="o4s-pill">{p}</span>)}
+        <span class="mx-1 text-muted hidden sm:inline">·</span>
+        <span class="o4s-prompt mr-1">official:</span>
+        {providers.official.map((p) => <span class="o4s-pill">{p}</span>)}
+      </div>
+    </div>
+  </section>
 
-    <Fragment slot="subtitle">
-      <span class="hidden sm:inline">
-        <span class="font-semibold">AstroWind</span> is a free, customizable and production-ready template for Astro v6 +
-        Tailwind CSS v4.</span
+  <!-- ================= PARADIGM (centerpiece) ================= -->
+  <WidgetWrapper id="paradigm" containerClass="max-w-7xl mx-auto">
+    <div class="text-center max-w-3xl mx-auto mb-10">
+      <p class="o4s-prompt mb-3"># ─── the paradigm</p>
+      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
+        Code-as-Action, not ReAct.
+      </h2>
+      <p class="mt-4 text-lg text-muted">
+        Most “AI agents” are ReAct + <code class="o4s-chip">tool_use</code>: one JSON tool call per step against a fixed
+        menu. OpenAI4S instead emits a cell of real Python/R that runs in a persistent kernel — every “tool” is a plain
+        function on an in-kernel <code class="o4s-chip">host</code> object. The action space is a Turing-complete language.
+      </p>
+    </div>
+
+    <!-- comparison -->
+    <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-[minmax(120px,0.7fr)_1fr_1fr] gap-0 cmp-card">
+      <div class="hidden md:block cmp-row" style="border-top:0"></div>
+      <div
+        class="cmp-row cmp-title-old font-semibold font-mono text-sm md:border-l md:border-[color:var(--o4s-border)]"
+        style="border-top:0"
       >
-      <span class="block mb-1 sm:hidden font-bold text-blue-600">AstroWind: Production-ready.</span>
-      Suitable for Startups, Small Business, SaaS websites, Professional Portfolios, Marketing websites, Landing Pages & Blogs.
-    </Fragment>
-  </Hero>
+        ReAct + tool_use
+      </div>
+      <div
+        class="cmp-row cmp-title-new cmp-col-new font-semibold font-mono text-sm flex items-center gap-2 md:border-l md:border-[color:var(--o4s-border)]"
+        style="border-top:0"
+      >
+        <span class="nb-led"></span>Code-as-Action (OpenAI4S)
+      </div>
+      {
+        cmpRows.map((row) => (
+          <>
+            <div class="cmp-row cmp-label flex items-center" set:html={row.a} />
+            <div class="cmp-row text-muted md:border-l md:border-[color:var(--o4s-border)]" set:html={row.r} />
+            <div class="cmp-row cmp-col-new md:border-l md:border-[color:var(--o4s-border)]" set:html={row.c} />
+          </>
+        ))
+      }
+    </div>
 
-  <!-- Note Widget ******************* -->
+    <div class="max-w-4xl mx-auto mt-10">
+      <CodeCard label="~/OpenAI4S · one cell" live="one round-trip" dots={true}>
+        <Fragment set:html={paradigmCode} />
+      </CodeCard>
+    </div>
+  </WidgetWrapper>
 
-  <Note title="Philosophy:" description="Simplicity, Best Practices and High Performance" />
-
-  <!-- Features Widget *************** -->
-
-  <Features
-    id="features"
-    tagline="Features"
-    title="What you get with AstroWind"
-    subtitle="One of the most professional and comprehensive templates currently on the market. Most starred & forked Astro theme in 2022, 2023, 2024 and 2025."
+  <!-- ================= HIGHLIGHTS (Features3) ================= -->
+  <Features3
+    id="highlights"
+    title="What makes it different."
+    subtitle="Five load-bearing differences — every one verifiable in the repo."
+    columns={3}
+    bg={altBgLayer}
     items={[
       {
-        title: 'Astro + Tailwind CSS Integration',
+        title: 'Code-as-Action engine',
         description:
-          'A seamless integration between two great frameworks that offer high productivity, performance and versatility. Now powered by Tailwind CSS v4.',
-        icon: 'tabler:brand-tailwind',
+          'A Jupyter-style persistent kernel <em>is</em> the action space. Namespace persists across cells; big objects stay resident, only summaries hit context.',
+        icon: 'tabler:code',
       },
       {
-        title: 'Ready-to-use Components',
+        title: 'Pure-stdlib core',
         description:
-          'Widgets made with Tailwind CSS v4 ready to be used in Marketing Websites, SaaS, Blogs, Personal Profiles, Small Business...',
-        icon: 'tabler:components',
-      },
-      {
-        title: 'Best Practices',
-        description:
-          'Creating secure, efficient, and user-friendly websites that deliver exceptional experiences and lasting value.',
-        icon: 'tabler:list-check',
-      },
-      {
-        title: 'Excellent Page Speed',
-        description:
-          'Having a good page speed impacts organic search ranking, improves user experience (UI/UX) and increase conversion rates.',
-        icon: 'tabler:rocket',
-      },
-      {
-        title: 'Search Engine Optimization (SEO)',
-        description:
-          "SEO lies in its ability to enhance a website's visibility, driving organic traffic and enabling it to reach a wider audience.",
-        icon: 'tabler:arrows-right-left',
-      },
-      {
-        title: 'Open to new ideas and contributions',
-        description:
-          'Embracing a culture that is open to new ideas and contributions is integral fostering innovation, collaboration, and a dynamic user experience.',
-        icon: 'tabler:bulb',
-      },
-    ]}
-  />
-
-  <!-- Content Widget **************** -->
-
-  <Content
-    isReversed
-    tagline="Inside template"
-    title="AstroWind's Blueprint: Fun Meets Functionality!"
-    items={[
-      {
-        title: 'Built on top of Astro v6',
-        description:
-          'Benefiting from the performance and developer-friendly features of this modern static site generator.',
-      },
-      {
-        title: 'Styled using Tailwind CSS v4',
-        description:
-          'Facilitating rapid design and consistent styling with this highly popular utility-first CSS framework.',
-      },
-      {
-        title: 'Cross-browser compatibility',
-        description:
-          'Ensure your website looks and functions consistently across various web browsers, delivering a seamless experience to all users.',
-      },
-    ]}
-    image={{
-      src: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-      alt: 'Colorful Image',
-    }}
-  >
-    <Fragment slot="content">
-      <h3 class="text-2xl font-bold tracking-tight dark:text-white sm:text-3xl mb-2">Building on modern foundations</h3>
-      Gain a competitive advantage by incorporating industry leading practices
-    </Fragment>
-
-    <Fragment slot="bg">
-      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
-    </Fragment>
-  </Content>
-
-  <!-- Content Widget **************** -->
-
-  <Content
-    isAfterContent
-    items={[
-      {
-        title: 'High level of customization',
-        description: `Tailor the template effortlessly to match your brand's identity and requirements, making your website distinct and saving you time.`,
-      },
-      {
-        title: 'Multiple layout possibilities',
-        description:
-          'Explore various layout options to find the structure that best presents your content, enhancing user engagement and navigation.',
-      },
-      {
-        title: 'Fully responsive design',
-        description:
-          "Ensure your website's optimal performance on various devices and screen sizes, providing a consistent and enjoyable user experience.",
-      },
-      {
-        title: 'Integration of media',
-        description:
-          'Seamlessly incorporate images, videos, and multimedia elements that enhance your content and engage visitors effectively.',
-      },
-    ]}
-    image={{
-      src: 'https://images.unsplash.com/photo-1600132806370-bf17e65e942f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2194&q=80',
-      alt: 'Blueprint Image',
-    }}
-  >
-    <Fragment slot="content">Ensure your online presence truly represents you.</Fragment>
-
-    <Fragment slot="bg">
-      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
-    </Fragment>
-  </Content>
-
-  <!-- Content Widget **************** -->
-
-  <Content
-    isReversed
-    isAfterContent
-    items={[
-      {
-        title: 'Enhanced user engagement',
-        description:
-          'Captivate your audience with interactive elements, intuitive navigation, and visually appealing layouts, encouraging longer visits.',
-      },
-      {
-        title: 'Continuous improvement',
-        description:
-          'Ensure your website stays aligned with the latest trends and technologies through regular updates and enhancements.',
-      },
-      {
-        title: 'Time and resource efficiency',
-        description:
-          'Skip the time-consuming process of building a website from scratch and launch your online presence sooner with AstroWind.',
-      },
-      {
-        title: 'Community support',
-        description: `Join the growing AstroWind community for insights, resources, and assistance, ensuring you're never alone on your web development journey.`,
-      },
-    ]}
-    image={{
-      src: 'https://images.unsplash.com/photo-1611462985358-60d3498e0364?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-      alt: 'Astronauts Image',
-    }}
-  >
-    <Fragment slot="content">Designed to foster growth and success.</Fragment>
-
-    <Fragment slot="bg">
-      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
-    </Fragment>
-  </Content>
-
-  <!-- Steps Widget ****************** -->
-
-  <Steps
-    title="Get your dream website up and running in no time with AstroWind."
-    items={[
-      {
-        title: 'Step 1: <span class="font-medium">Download</span>',
-        description:
-          "Kickstart with GitHub! Either fork the AstroWind template or simply click 'Use this template'. Your canvas awaits, ready for your digital masterpiece. In just a few clicks, you've already set the foundation.",
+          'The engine <em>and</em> the web server are stdlib-only (http.server + a hand-rolled WebSocket, no framework, no deps). The LLM client speaks OpenAI / Anthropic / Gemini over urllib alone.',
         icon: 'tabler:package',
       },
       {
-        title: 'Step 2: <span class="font-medium">Add content</span>',
+        title: 'One-line multi-provider',
         description:
-          "Pour your vision into it. Add images, text, and all that jazz to breathe life into your digital space. Remember, it's the content that tells your story, so make it captivating.",
-        icon: 'tabler:letter-case',
+          'ark (doubao · glm · kimi · deepseek · minimax) plus official chatgpt · claude · gemini, behind a single host.llm; switch from the UI.',
+        icon: 'tabler:plug-connected',
       },
       {
-        title: 'Step 3: <span class="font-medium">Customize styles</span>',
+        title: 'Full scientific web app',
         description:
-          'Give it your personal touch. Tailor colors, fonts, and layouts until it feels just right. Your unique flair, amplified by AstroWind! Precision in design ensures a seamless user experience.',
-        icon: 'tabler:paint',
+          'Live streaming turns, versioned artifacts (with a built-in 3Dmol viewer for .pdb/.cif), a live Notebook sharing the agent’s kernel, background & resume.',
+        icon: 'tabler:browser',
       },
       {
-        title: 'Ready!',
-        icon: 'tabler:check',
-      },
-    ]}
-    image={{
-      src: 'https://images.unsplash.com/photo-1616198814651-e71f960c3180?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80',
-      alt: 'Steps image',
-    }}
-  />
-
-  <!-- Features2 Widget ************** -->
-
-  <Features2
-    title="Most used widgets"
-    subtitle="Provides frequently used components for building websites using Tailwind CSS v4"
-    tagline="Components"
-    items={[
-      {
-        title: 'Headers',
-        description: "Ever tried driving without GPS? Boom! That's why websites need headers for direction.",
-        icon: 'flat-color-icons:template',
-      },
-      {
-        title: 'Heros',
+        title: 'BYOC remote compute',
         description:
-          "Picture a superhero landing – epic, right? That's the job of a Hero section, making grand entrances!",
-        icon: 'flat-color-icons:gallery',
+          'Dispatch GPU jobs to your own machines via ssh:&lt;alias&gt; or the bundled NVIDIA NIM provider; real host.fold (single-sequence Protenix / AF3-class) under a strict no-fabrication policy.',
+        icon: 'tabler:cloud-cog',
       },
       {
-        title: 'Features',
+        title: '24 bundled Skills',
         description:
-          'Where websites strut their stuff and show off superpowers. No holding back on the bragging rights here!',
-        icon: 'flat-color-icons:approval',
-      },
-      {
-        title: 'Content',
-        description:
-          "Dive into the meat and potatoes of a site; without it, you'd just be window shopping. Content is king.",
-        icon: 'flat-color-icons:document',
-      },
-      {
-        title: 'Call-to-Action',
-        description:
-          'That enthusiastic friend who\'s always urging, "Do it! Do it!"? Yeah, that\'s this button nudging you towards adventure.',
-        icon: 'flat-color-icons:advertising',
-      },
-      {
-        title: 'Pricing',
-        description: 'Behold the dessert menu of the website world. Tempting choices await, can you resist?',
-        icon: 'flat-color-icons:currency-exchange',
-      },
-      {
-        title: 'Testimonial',
-        description: 'Step into the gossip corner! Here, other visitors spill the beans and share the juicy details.',
-        icon: 'flat-color-icons:voice-presentation',
-      },
-      {
-        title: 'Contact',
-        description:
-          'Like a digital mailbox, but faster! Drop a line, ask a question, or send a virtual high-five. Ding! Message in.',
-        icon: 'flat-color-icons:business-contact',
-      },
-      {
-        title: 'Footers',
-        description: "The footer's like the credits of a movie but sprinkled with easter eggs. Time to hunt!",
-        icon: 'flat-color-icons:database',
-      },
-    ]}
-  >
-    <Fragment slot="bg">
-      <div class="absolute inset-0 bg-blue-50 dark:bg-transparent"></div>
-    </Fragment>
-  </Features2>
-
-  <!-- HighlightedPosts Widget ******* -->
-
-  <BlogLatestPosts
-    title="Find out more content in our Blog"
-    information={`The blog is used to display AstroWind documentation.
-                        Each new article will be an important step that you will need to know to be an expert in creating a website using Astro v6 + Tailwind CSS v4.
-                        Astro is a very interesting technology. Thanks.
-                `}
-  />
-
-  <!-- FAQs Widget ******************* -->
-
-  <FAQs
-    title="Frequently Asked Questions"
-    subtitle="Dive into the following questions to gain insights into the powerful features that AstroWind offers and how it can elevate your web development journey."
-    tagline="FAQs"
-    classes={{ container: 'max-w-6xl' }}
-    items={[
-      {
-        title: 'Why AstroWind?',
-        description:
-          "Michael Knight a young loner on a crusade to champion the cause of the innocent. The helpless. The powerless in a world of criminals who operate above the law. Here he comes Here comes Speed Racer. He's a demon on wheels.",
-      },
-      {
-        title: 'What do I need to start?',
-        description:
-          'Space, the final frontier. These are the voyages of the Starship Enterprise. Its five-year mission: to explore strange new worlds. Many say exploration is part of our destiny, but it’s actually our duty to future generations.',
-      },
-      {
-        title: 'How to install the Astro + Tailwind CSS template?',
-        description:
-          "Well, the way they make shows is, they make one show. That show's called a pilot. Then they show that show to the people who make shows, and on the strength of that one show they decide if they're going to make more shows.",
-      },
-      {
-        title: "What's something that you don't understand?",
-        description:
-          "A flower in my garden, a mystery in my panties. Heart attack never stopped old Big Bear. I didn't even know we were calling him Big Bear.",
-      },
-      {
-        title: 'What is something that you would like to try again?',
-        description:
-          "A business big enough that it could be listed on the NASDAQ goes belly up. Disappears! It ceases to exist without me. No, you clearly don't know who you're talking to, so let me clue you in.",
-      },
-      {
-        title: 'If you could only ask one question to each person you meet, what would that question be?',
-        description:
-          "This is not about revenge. This is about justice. A lot of things can change in twelve years, Admiral. Well, that's certainly good to know. About four years. I got tired of hearing how young I looked.",
+          'Skills are recipes of code, not JSON schemas — a SKILL.md the agent imports into the kernel. 14 of them wrap GPU/model science tools.',
+        icon: 'tabler:books',
       },
     ]}
   />
 
-  <!-- Stats Widget ****************** -->
+  <!-- ================= DEMOS ================= -->
+  <WidgetWrapper id="demos" containerClass="max-w-7xl mx-auto">
+    <div class="text-center max-w-3xl mx-auto mb-10">
+      <p class="o4s-prompt mb-3"># ─── see it run</p>
+      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
+        Watch it do real science.
+      </h2>
+      <p class="mt-4 text-lg text-muted">Six real sessions — no fabricated UI. Hover to play.</p>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-6 lg:gap-8">
+      {demos.map((d) => <DemoVideo src={d.src} poster={d.poster} label={d.label} caption={d.caption} />)}
+    </div>
+  </WidgetWrapper>
 
+  <!-- ================= DUAL LOOP ================= -->
+  <WidgetWrapper containerClass="max-w-6xl mx-auto" bg={altBgLayer}>
+    <div class="text-center max-w-3xl mx-auto mb-10">
+      <p class="o4s-prompt mb-3">In[2]: agent.loop()</p>
+      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
+        How it works — the dual loop.
+      </h2>
+    </div>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="nb-card p-0">
+        <div class="nb-head">
+          <span>outer loop</span><span class="nb-live"><span class="nb-led"></span>kernel</span>
+        </div>
+        <div class="p-6 text-default">
+          <p>
+            The model emits prose + <strong>one code cell</strong>. A pre-exec safety classifier screens it, then it
+            runs in the <strong>persistent kernel</strong> — the namespace persists, stdout is captured. The host collects
+            stdout, artifacts, and resource usage, then continues or finishes. It ends only on
+            <code class="o4s-chip">host.submit_output()</code>.
+          </p>
+        </div>
+      </div>
+      <div class="nb-card p-0">
+        <div class="nb-head">
+          <span>inner loop</span><span class="nb-live"><span class="nb-led"></span>host rpc</span>
+        </div>
+        <div class="p-6 text-default">
+          <p class="mb-4">
+            Mid-cell, code makes synchronous <strong>host RPC calls</strong> — the loop that simply doesn’t exist in
+            <code class="o4s-chip">tool_use</code>:
+          </p>
+          <div class="flex flex-wrap gap-2">
+            {hostChips.map((h) => <code class="o4s-chip">{h}</code>)}
+          </div>
+        </div>
+      </div>
+    </div>
+  </WidgetWrapper>
+
+  <!-- ================= SKILLS ================= -->
+  <WidgetWrapper id="skills" containerClass="max-w-6xl mx-auto">
+    <div class="text-center max-w-3xl mx-auto mb-10">
+      <p class="o4s-prompt mb-3"># ─── 24 bundled Skills</p>
+      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
+        Skills are recipes of code.
+      </h2>
+      <p class="mt-4 text-lg text-muted">
+        Not JSON schemas — a <code class="o4s-chip">SKILL.md</code> the agent imports into the kernel. 24 bundled, 14 of them
+        wrapping GPU/model science tools.
+      </p>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-6">
+      {
+        skillGroups.map((g) => (
+          <div class="nb-card p-6">
+            <p class="o4s-prompt mb-4">{g.label}</p>
+            <div class="flex flex-wrap gap-2">
+              {g.items.map((s) => (
+                <span class="o4s-pill">{s}</span>
+              ))}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </WidgetWrapper>
+
+  <!-- ================= STATS ================= -->
   <Stats
+    bg={altBgLayer}
     stats={[
-      { title: 'Downloads', amount: '132K' },
-      { title: 'Stars', amount: '24.8K' },
-      { title: 'Forks', amount: '10.3K' },
-      { title: 'Users', amount: '48.4K' },
+      { amount: '24', title: 'Bundled Skills' },
+      { amount: '14', title: 'GPU/model Skills' },
+      { amount: '8', title: 'Model providers' },
+      { amount: '206', title: 'Tests passing' },
+      { amount: '¥9.9', title: 'Per month to run' },
+      { amount: '0', title: 'Core dependencies' },
+      { amount: 'MIT', title: 'License' },
     ]}
   />
 
-  <!-- CallToAction Widget *********** -->
+  <!-- ================= PRICING ================= -->
+  <WidgetWrapper id="pricing" containerClass="max-w-6xl mx-auto">
+    <div class="text-center max-w-3xl mx-auto mb-10">
+      <p class="o4s-prompt mb-3"># ─── two ways to run</p>
+      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
+        Two ways to run — both cheap.
+      </h2>
+      <p class="mt-4 text-lg text-muted">
+        No frontier-model key required. Self-host free, or drive it for pocket change.
+      </p>
+    </div>
+    <div class="grid md:grid-cols-2 gap-6 items-start">
+      <div class="nb-card p-8 h-full">
+        <p class="o4s-prompt">self-host</p>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span class="text-4xl font-bold font-heading text-gray-900 dark:text-white">Free</span>
+          <span class="text-muted font-mono text-sm">· MIT</span>
+        </div>
+        <p class="mt-3 text-muted">
+          Clone the repo, bring any key or none, all features. No frontier-model key required.
+        </p>
+        <ul class="mt-5 space-y-2 text-sm text-default">
+          <li>✓ Full Code-as-Action engine + web app</li>
+          <li>✓ 24 Skills, live Notebook, versioned artifacts</li>
+          <li>✓ BYOC GPU compute (ssh / NVIDIA NIM)</li>
+        </ul>
+        <div class="mt-6">
+          <Button variant="primary" href={GITHUB} target="_blank" icon="tabler:brand-github" text="Get it on GitHub" />
+        </div>
+      </div>
+      <div class="nb-card p-8 h-full" style="border-color: var(--o4s-amber); box-shadow: 0 0 0 1px var(--o4s-amber)">
+        <div class="flex items-center justify-between">
+          <p class="o4s-prompt" style="color: var(--o4s-amber)">doubao · volcengine ark</p>
+          <span
+            class="text-xs font-mono px-2 py-0.5 rounded"
+            style="background: color-mix(in srgb, var(--o4s-amber) 16%, transparent); color: var(--o4s-amber)"
+            >cheapest</span
+          >
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span class="text-4xl font-bold font-heading" style="color: var(--o4s-amber)">¥9.9</span>
+          <span class="text-muted font-mono text-sm">/ month (≈ US$1.4)</span>
+        </div>
+        <p class="mt-3 text-muted">
+          A Claude-Science-class agent for less than a cup of coffee. Pick the <code class="o4s-chip">ark</code> provider
+          in the UI.
+        </p>
+        <div class="mt-5 rounded-lg overflow-hidden border border-[color:var(--o4s-border)]">
+          <Image src={arkPlan} alt="Volcengine Ark Agent Plan — the Small tier is ¥9.9 / month" loading="lazy" />
+        </div>
+        <p class="mt-2 text-xs text-muted font-mono">
+          Volcengine Ark · Agent Plan (Personal) — the entry “Small” tier is ¥9.9 / month.
+        </p>
+      </div>
+    </div>
+  </WidgetWrapper>
 
-  <CallToAction
-    actions={[
+  <!-- ================= QUICKSTART ================= -->
+  <WidgetWrapper id="quickstart" containerClass="max-w-4xl mx-auto" bg={altBgLayer}>
+    <div class="text-center max-w-3xl mx-auto mb-8">
+      <p class="o4s-prompt mb-3"># ─── quickstart</p>
+      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
+        Up and running in three commands.
+      </h2>
+    </div>
+    <div class="nb-card">
+      <div class="nb-head">
+        <span class="inline-flex items-center gap-2"><span class="nb-dots"><i></i><i></i><i></i></span>~/OpenAI4S</span>
+        <button
+          class="o4s-copy font-mono text-xs px-2 py-1 rounded border border-[color:var(--o4s-border)] hover:text-primary"
+          data-copy={`git clone https://github.com/PKU-YuanGroup/OpenAI4S && cd OpenAI4S\n./setup.sh\n./start.sh`}
+          >copy</button
+        >
+      </div>
+      <div class="nb-body"><Fragment set:html={quickstart} /></div>
+    </div>
+    <p class="mt-4 text-sm text-muted text-center">
+      No API key is needed to boot — set your model in the UI (Customize → Models). One-shot without the UI:
+      <code class="o4s-chip">uv run openai4s run "Compute the mean of [4,8,15,16,23,42] and submit it." -v</code>
+    </p>
+  </WidgetWrapper>
+
+  <!-- ================= FAQs ================= -->
+  <FAQs
+    title="Frequently asked questions"
+    tagline="FAQ"
+    columns={2}
+    items={[
       {
-        variant: 'primary',
-        text: 'Get template',
-        href: 'https://github.com/arthelokyo/astrowind',
-        target: '_blank',
-        icon: 'tabler:download',
+        title: 'What is Code-as-Action vs ReAct?',
+        description:
+          'ReAct emits one tool_use JSON per step against a fixed menu; OpenAI4S emits a full Python/R cell into a persistent kernel — a Turing-complete action space where loops, branches, and library calls happen in one round-trip and big objects stay resident.',
+        icon: 'tabler:git-branch',
+      },
+      {
+        title: 'Do I really not need a frontier key?',
+        description:
+          'Correct. No API key is needed to boot; set your model in the UI. It runs on Doubao via Volcengine Ark’s “Small” plan at ¥9.9/mo (≈ US$1.4), or bring your own chatgpt / claude / gemini key.',
+        icon: 'tabler:key',
+      },
+      {
+        title: 'Which models and providers?',
+        description:
+          'ark (doubao · glm · kimi · deepseek · minimax) plus official chatgpt · claude · gemini, all behind one host.llm, switchable from the UI.',
+        icon: 'tabler:switch-horizontal',
+      },
+      {
+        title: 'Do I need a GPU? What is BYOC / host.fold?',
+        description:
+          'No local GPU required. Dispatch GPU jobs to your own machines via ssh:&lt;alias&gt; or the bundled NVIDIA NIM provider; host.fold runs single-sequence Protenix / AF3-class folding under a strict no-fabrication policy.',
+        icon: 'tabler:cpu',
+      },
+      {
+        title: 'Is the core really dependency-free?',
+        description:
+          'Yes — the engine and web server are pure stdlib (http.server + a hand-rolled WebSocket, no framework); the LLM client speaks OpenAI/Anthropic/Gemini over urllib. The optional science extra pins numpy/pandas/matplotlib.',
+        icon: 'tabler:packages',
+      },
+      {
+        title: 'Is it safe? License?',
+        description:
+          'Defense-in-depth: a pre-exec safety classifier screens every cell before it runs in the kernel. See the Security doc. Released under the MIT license — github.com/PKU-YuanGroup/OpenAI4S.',
+        icon: 'tabler:shield-check',
       },
     ]}
-  >
-    <Fragment slot="title">
-      Astro&nbsp;+&nbsp;<br class="block sm:hidden" /><span class="sm:whitespace-nowrap">Tailwind CSS</span>
-    </Fragment>
+  />
 
-    <Fragment slot="subtitle">
-      Be very surprised by these huge fake numbers you are seeing on this page. <br class="hidden md:inline" />Don't
-      waste more time! :P
-    </Fragment>
-  </CallToAction>
+  <!-- ================= CREDIBILITY NOTE ================= -->
+  <section style={altBg} class="border-y border-[color:var(--o4s-border)]">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 py-8 text-center text-sm text-muted">
+      Independently reproduces the Code-as-Action paradigm (cf. Claude Science, CodeAct, ReAct). The science Skills
+      stand on ColabFold / AlphaFold, ESM, OpenFold, Boltz, Chai, ProteinMPNN, DiffDock, Evo2, Borzoi, scGPT, scVI-tools
+      and open data services (NCBI, UniProt, RCSB PDB, EBI, OpenAlex, Crossref).
+    </div>
+  </section>
+
+  <!-- ================= CLOSING CTA ================= -->
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+      <div class="o4s-glow-center absolute inset-0"></div>
+    </div>
+    <div class="relative max-w-4xl mx-auto px-4 sm:px-6 py-16 md:py-24 text-center">
+      <span
+        class="inline-flex mx-auto mb-6 rounded-2xl overflow-hidden shadow-lg"
+        style="border: 1px solid var(--o4s-border)"
+      >
+        <picture>
+          <source srcset={pentaFrame.src} media="(prefers-reduced-motion: reduce)" />
+          <img src={penta.src} alt="OpenAI4S" width="76" height="76" class="w-[76px] h-[76px]" />
+        </picture>
+      </span>
+      <p class="o4s-prompt mb-3">code is the action, the kernel is the environment.</p>
+      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
+        Replicate Claude Science in two cuts.
+      </h2>
+      <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+        <Button variant="primary" href={GITHUB} target="_blank" icon="tabler:star" text="Star on GitHub" />
+        <a href={ARCH} target="_blank" rel="noopener" class="btn-ghost">Read the architecture</a>
+      </div>
+      <p class="mt-8 o4s-prompt" style="color: var(--aw-color-text-muted)">
+        openai4s.org · MIT · Open AI for Scientist
+      </p>
+    </div>
+  </section>
 </Layout>
+
+<script>
+  // Lazy-load + autoplay demo videos on scroll; pause offscreen.
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const vids = document.querySelectorAll<HTMLVideoElement>('video[data-src]');
+  if (!reduce && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          const v = e.target as HTMLVideoElement;
+          if (e.isIntersecting) {
+            if (!v.src) v.src = v.dataset.src || '';
+            v.play().catch(() => {});
+          } else {
+            v.pause();
+          }
+        });
+      },
+      { threshold: 0.25 }
+    );
+    vids.forEach((v) => io.observe(v));
+  }
+
+  // Activate a demo (mouse or keyboard) to expand fullscreen with controls.
+  const demoVids = document.querySelectorAll<HTMLVideoElement>('[data-demo] video');
+  const expand = (v: HTMLVideoElement) => {
+    if (!v.src) v.src = v.dataset.src || '';
+    v.controls = true;
+    const el = v as HTMLVideoElement & { webkitEnterFullscreen?: () => void };
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+    else if (el.webkitEnterFullscreen) el.webkitEnterFullscreen();
+  };
+  demoVids.forEach((v) => {
+    v.addEventListener('click', () => expand(v));
+    v.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        expand(v);
+      }
+    });
+  });
+  // Single document-level listener clears controls on all demos when leaving fullscreen.
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) demoVids.forEach((v) => (v.controls = false));
+  });
+
+  // Copy buttons — guard insecure contexts, catch failures, avoid re-entry label bug.
+  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) => {
+    if (!btn.dataset.label) btn.dataset.label = btn.textContent || '';
+    btn.addEventListener('click', async () => {
+      if (btn.classList.contains('copied')) return;
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+        await navigator.clipboard.writeText(btn.dataset.copy || '');
+        btn.classList.add('copied');
+        btn.textContent = '✓ copied';
+      } catch {
+        btn.textContent = '⧉ select & copy';
+      }
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.textContent = btn.dataset.label || '';
+      }, 1400);
+    });
+  });
+</script>

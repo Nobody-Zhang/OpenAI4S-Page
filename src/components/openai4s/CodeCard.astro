@@ -1,0 +1,37 @@
+---
+interface Props {
+  label?: string;
+  live?: string | false;
+  dots?: boolean;
+  class?: string;
+}
+const { label = 'kernel · python3', live = 'alive', dots = false, class: className = '' } = Astro.props;
+---
+
+<div class:list={['nb-card', className]}>
+  <div class="nb-head">
+    <span class="inline-flex items-center gap-2 truncate">
+      {
+        dots && (
+          <span class="nb-dots">
+            <>
+              <i />
+              <i />
+              <i />
+            </>
+          </span>
+        )
+      }
+      <span class="truncate">{label}</span>
+    </span>
+    {
+      live && (
+        <span class="nb-live">
+          <span class="nb-led" />
+          {live}
+        </span>
+      )
+    }
+  </div>
+  <div class="nb-body"><slot /></div>
+</div>
