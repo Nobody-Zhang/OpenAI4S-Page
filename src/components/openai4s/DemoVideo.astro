@@ -1,0 +1,32 @@
+---
+interface Props {
+  src: string;
+  poster: string;
+  caption?: string;
+  label?: string;
+  class?: string;
+}
+const { src, poster, caption = '', label = 'session · replay', class: className = '' } = Astro.props;
+---
+
+<figure class:list={['nb-card o4s-video-wrap m-0', className]} data-demo>
+  <div class="nb-head">
+    <span class="inline-flex items-center gap-2 truncate">
+      <span class="nb-dots"><i></i><i></i><i></i></span>
+      <span class="truncate">{label}</span>
+    </span>
+    <span class="nb-live"><span class="nb-led"></span>rec</span>
+  </div>
+  <video
+    class="o4s-video"
+    muted
+    playsinline
+    loop
+    preload="none"
+    poster={poster}
+    data-src={src}
+    role="button"
+    tabindex="0"
+    aria-label={`Play demo: ${caption}`}></video>
+  {caption && <figcaption class="o4s-caption">{caption}</figcaption>}
+</figure>
