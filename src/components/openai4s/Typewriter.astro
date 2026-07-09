@@ -1,0 +1,164 @@
+---
+interface Props {
+  /** Phrase to type. Keep short for best effect. */
+  text: string;
+  /** Milliseconds per character. Default 42. */
+  speed?: number;
+  class?: string;
+}
+const { text, speed = 42, class: className = '' } = Astro.props;
+---
+
+<span
+  class:list={['o4s-typewriter', className]}
+  data-o4s-typewriter
+  data-text={text}
+  data-speed={String(speed)}
+  aria-label={text}
+>
+  <span class="o4s-typewriter__text" data-o4s-typewriter-text>{text}</span>
+  <span class="o4s-typewriter__cursor" aria-hidden="true"></span>
+</span>
+
+<script>
+  const prefersReduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const typeInto = (el: HTMLElement) => {
+    const textEl = el.querySelector<HTMLElement>('[data-o4s-typewriter-text]');
+    if (!textEl) return;
+
+    const full = el.dataset.text ?? textEl.textContent ?? '';
+    const speed = Math.max(8, Number(el.dataset.speed || 42));
+
+    if (prefersReduced() || full.length === 0) {
+      textEl.textContent = full;
+      el.classList.add('is-done');
+      return;
+    }
+
+    textEl.textContent = '';
+    el.classList.add('is-typing');
+    el.classList.remove('is-done');
+
+    let i = 0;
+    let timer = 0;
+
+    const step = () => {
+      i += 1;
+      textEl.textContent = full.slice(0, i);
+      if (i < full.length) {
+        timer = window.setTimeout(step, speed);
+      } else {
+        el.classList.remove('is-typing');
+        el.classList.add('is-done');
+      }
+    };
+
+    // Start when near viewport so off-screen phrases don't finish early
+    const start = () => {
+      if (el.hasAttribute('data-o4s-type-started')) return;
+      el.setAttribute('data-o4s-type-started', '');
+      timer = window.setTimeout(step, speed);
+    };
+
+    if (typeof IntersectionObserver === 'undefined') {
+      start();
+      return;
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          io.disconnect();
+          start();
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    io.observe(el);
+
+    // Cleanup handle for view transitions / re-init
+    (el as HTMLElement & { __o4sTwCleanup?: () => void }).__o4sTwCleanup = () => {
+      window.clearTimeout(timer);
+      io.disconnect();
+    };
+  };
+
+  const init = (root: ParentNode = document) => {
+    const nodes = root.querySelectorAll<HTMLElement>('[data-o4s-typewriter]:not([data-o4s-typewriter-ready])');
+    nodes.forEach((el) => {
+      // Clean previous run if re-hydrating
+      const prev = el as HTMLElement & { __o4sTwCleanup?: () => void };
+      prev.__o4sTwCleanup?.();
+      delete prev.__o4sTwCleanup;
+      el.removeAttribute('data-o4s-type-started');
+      el.classList.remove('is-typing', 'is-done');
+      el.setAttribute('data-o4s-typewriter-ready', '');
+      typeInto(el);
+    });
+  };
+
+  init();
+  document.addEventListener('astro:page-load', () => {
+    // Allow re-init after client navigations
+    document.querySelectorAll<HTMLElement>('[data-o4s-typewriter]').forEach((el) => {
+      el.removeAttribute('data-o4s-typewriter-ready');
+    });
+    init();
+  });
+</script>
+
+<style>
+  .o4s-typewriter {
+    display: inline;
+    font-family: var(--aw-font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-ligatures: none;
+    white-space: pre-wrap;
+  }
+
+  .o4s-typewriter__text {
+    color: inherit;
+  }
+
+  .o4s-typewriter__cursor {
+    display: inline-block;
+    width: 0.55ch;
+    height: 1.05em;
+    margin-left: 0.12em;
+    vertical-align: -0.12em;
+    background: currentColor;
+    opacity: 0.85;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--o4s-cyan, #22d3ee) 55%, transparent);
+    border-radius: 1px;
+    animation: o4s-tw-blink 1.05s steps(1) infinite;
+  }
+
+  .o4s-typewriter.is-typing .o4s-typewriter__cursor {
+    animation: none;
+    opacity: 1;
+  }
+
+  .o4s-typewriter.is-done .o4s-typewriter__cursor {
+    animation: o4s-tw-blink 1.05s steps(1) infinite;
+  }
+
+  @keyframes o4s-tw-blink {
+    0%,
+    49% {
+      opacity: 0.9;
+    }
+    50%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .o4s-typewriter__cursor {
+      animation: none !important;
+      opacity: 0.55;
+    }
+  }
+</style>

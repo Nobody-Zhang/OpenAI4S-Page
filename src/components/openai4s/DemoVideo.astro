@@ -7,26 +7,674 @@ interface Props {
   class?: string;
 }
 const { src, poster, caption = '', label = 'session · replay', class: className = '' } = Astro.props;
+const a11yName = caption || label;
 ---
 
 <figure class:list={['nb-card o4s-video-wrap m-0', className]} data-demo>
   <div class="nb-head">
-    <span class="inline-flex items-center gap-2 truncate">
-      <span class="nb-dots"><i></i><i></i><i></i></span>
+    <span class="inline-flex items-center gap-2 truncate min-w-0">
+      <span class="nb-dots" aria-hidden="true"><i></i><i></i><i></i></span>
       <span class="truncate">{label}</span>
     </span>
-    <span class="nb-live"><span class="nb-led"></span>rec</span>
+    <span class="o4s-rec" title="Recording indicator" aria-label="Recording">
+      <span class="o4s-rec-indicator" aria-hidden="true">
+        <span class="o4s-rec-ring">
+          <svg viewBox="0 0 24 24" class="o4s-rec-svg" focusable="false">
+            <circle class="o4s-rec-track" cx="12" cy="12" r="10" fill="none"></circle>
+            <circle class="o4s-rec-progress" cx="12" cy="12" r="10" fill="none"></circle>
+          </svg>
+        </span>
+        <span class="nb-led o4s-rec-led"></span>
+      </span>
+      <span class="o4s-rec-label">REC</span>
+    </span>
   </div>
-  <video
-    class="o4s-video"
-    muted
-    playsinline
-    loop
-    preload="none"
-    poster={poster}
-    data-src={src}
-    role="button"
-    tabindex="0"
-    aria-label={`Play demo: ${caption}`}></video>
+
+  <div class="o4s-video-stage">
+    <div class="o4s-video-glow" aria-hidden="true"></div>
+
+    <!-- Cinematic corner HUD frame -->
+    <div class="o4s-video-corners" aria-hidden="true">
+      <span class="o4s-corner o4s-corner--tl"></span>
+      <span class="o4s-corner o4s-corner--tr"></span>
+      <span class="o4s-corner o4s-corner--bl"></span>
+      <span class="o4s-corner o4s-corner--br"></span>
+    </div>
+
+    <!-- Poster / frame treatments -->
+    <div class="o4s-video-scan" aria-hidden="true"></div>
+    <div class="o4s-video-vignette" aria-hidden="true"></div>
+    <div class="o4s-video-grid" aria-hidden="true"></div>
+
+    <video
+      class="o4s-video"
+      muted
+      playsinline
+      loop
+      preload="none"
+      poster={poster}
+      data-src={src}
+      tabindex="-1"
+      aria-label={`Demo session: ${a11yName}`}
+    ></video>
+
+    <!-- Play / expand control -->
+    <button type="button" class="o4s-video-play" data-demo-expand aria-label={`Play and expand demo: ${a11yName}`}>
+      <span class="o4s-play-core" aria-hidden="true">
+        <span class="o4s-play-ring"></span>
+        <span class="o4s-play-ring o4s-play-ring--delay"></span>
+        <span class="o4s-play-btn">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" focusable="false" aria-hidden="true">
+            <path d="M8.5 6.5v11l9-5.5-9-5.5z"></path>
+          </svg>
+        </span>
+      </span>
+      <span class="o4s-play-hud">
+        <span class="o4s-play-hud-tag" data-demo-hud-tag>▶ PLAY</span>
+        <span class="o4s-play-hud-sep" aria-hidden="true">·</span>
+        <span class="o4s-play-hud-meta">FULLSCREEN</span>
+      </span>
+    </button>
+
+    <!-- Bottom telemetry strip -->
+    <div class="o4s-video-telemetry" aria-hidden="true">
+      <span class="o4s-tel-chip">
+        <i class="o4s-tel-dot"></i>
+        LIVE FEED
+      </span>
+      <span class="o4s-tel-meta">
+        <span>H.264</span>
+        <span class="o4s-tel-sep">/</span>
+        <span>LOOP</span>
+        <span class="o4s-tel-sep">/</span>
+        <span class="o4s-tel-status" data-demo-status>STANDBY</span>
+      </span>
+    </div>
+  </div>
+
   {caption && <figcaption class="o4s-caption">{caption}</figcaption>}
 </figure>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-demo]').forEach((wrap) => {
+    if (wrap.dataset.demoBound === '1') return;
+    wrap.dataset.demoBound = '1';
+
+    const video = wrap.querySelector<HTMLVideoElement>('video');
+    const expandBtn = wrap.querySelector<HTMLButtonElement>('[data-demo-expand]');
+    const status = wrap.querySelector<HTMLElement>('[data-demo-status]');
+    const hudTag = wrap.querySelector<HTMLElement>('[data-demo-hud-tag]');
+    if (!video) return;
+
+    const setPlaying = (on: boolean) => {
+      wrap.classList.toggle('is-playing', on);
+      if (status) status.textContent = on ? 'STREAMING' : 'STANDBY';
+      if (hudTag) hudTag.textContent = on ? '⛶ EXPAND' : '▶ PLAY';
+      if (expandBtn) {
+        expandBtn.setAttribute(
+          'aria-label',
+          on
+            ? `Expand demo fullscreen: ${video.getAttribute('aria-label')?.replace(/^Demo session:\s*/i, '') || 'session'}`
+            : `Play and expand demo: ${video.getAttribute('aria-label')?.replace(/^Demo session:\s*/i, '') || 'session'}`
+        );
+      }
+    };
+
+    video.addEventListener('play', () => setPlaying(true));
+    video.addEventListener('pause', () => setPlaying(false));
+    video.addEventListener('ended', () => setPlaying(false));
+    if (!video.paused && !video.ended) setPlaying(true);
+
+    // Fire the same click path the page script uses for fullscreen expand.
+    expandBtn?.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      video.click();
+    });
+  });
+</script>
+
+<style>
+  /* ---- Card shell: stronger cinematic border glow ---- */
+  .o4s-video-wrap {
+    --o4s-demo-accent: var(--o4s-cyan, #22d3ee);
+    --o4s-demo-accent-2: var(--o4s-violet, #a78bfa);
+    --o4s-demo-hot: var(--o4s-neon, #34d399);
+    position: relative;
+    isolation: isolate;
+    cursor: zoom-in;
+    transition:
+      border-color 0.3s ease,
+      box-shadow 0.35s ease,
+      transform 0.35s ease;
+  }
+
+  .o4s-video-wrap:hover,
+  .o4s-video-wrap:focus-within {
+    border-color: color-mix(in srgb, var(--o4s-demo-accent) 55%, var(--o4s-border, #1e293b));
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--o4s-demo-accent) 28%, transparent),
+      0 1px 0 rgb(255 255 255 / 6%) inset,
+      0 28px 72px -24px rgb(0 0 0 / 65%),
+      0 0 48px -8px color-mix(in srgb, var(--o4s-demo-accent) 55%, transparent),
+      0 0 80px -20px color-mix(in srgb, var(--o4s-demo-accent-2) 40%, transparent);
+  }
+
+  .o4s-video-wrap:focus-within {
+    outline: none;
+  }
+
+  /* ---- REC indicator with progress ring ---- */
+  .o4s-rec {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, #f87171 85%, white);
+  }
+
+  .o4s-rec-indicator {
+    position: relative;
+    width: 1.15rem;
+    height: 1.15rem;
+    display: grid;
+    place-items: center;
+  }
+
+  .o4s-rec-ring {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .o4s-rec-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .o4s-rec-track {
+    stroke: color-mix(in srgb, #f87171 22%, transparent);
+    stroke-width: 1.75;
+  }
+
+  .o4s-rec-progress {
+    stroke: #f87171;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-dasharray: 62.83;
+    stroke-dashoffset: 48;
+    filter: drop-shadow(0 0 4px color-mix(in srgb, #f87171 70%, transparent));
+    animation: o4s-rec-sweep 3.2s linear infinite;
+  }
+
+  .o4s-rec-led {
+    position: relative;
+    z-index: 1;
+    width: 0.42rem !important;
+    height: 0.42rem !important;
+    background: #f87171 !important;
+    box-shadow: 0 0 0 0 color-mix(in srgb, #f87171 55%, transparent);
+    animation: o4s-rec-pulse 1.6s ease-out infinite !important;
+  }
+
+  .o4s-rec-label {
+    text-shadow: 0 0 10px color-mix(in srgb, #f87171 45%, transparent);
+  }
+
+  .o4s-video-wrap.is-playing .o4s-rec {
+    color: color-mix(in srgb, var(--o4s-demo-hot) 80%, white);
+  }
+
+  .o4s-video-wrap.is-playing .o4s-rec-progress {
+    stroke: var(--o4s-demo-hot);
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--o4s-demo-hot) 70%, transparent));
+    animation-duration: 2s;
+  }
+
+  .o4s-video-wrap.is-playing .o4s-rec-track {
+    stroke: color-mix(in srgb, var(--o4s-demo-hot) 28%, transparent);
+  }
+
+  .o4s-video-wrap.is-playing .o4s-rec-led {
+    background: var(--o4s-demo-hot) !important;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--o4s-demo-hot) 55%, transparent);
+  }
+
+  .o4s-video-wrap.is-playing .o4s-rec-label {
+    text-shadow: 0 0 10px color-mix(in srgb, var(--o4s-demo-hot) 45%, transparent);
+  }
+
+  @keyframes o4s-rec-sweep {
+    0% {
+      stroke-dashoffset: 58;
+    }
+    50% {
+      stroke-dashoffset: 12;
+    }
+    100% {
+      stroke-dashoffset: 58;
+    }
+  }
+
+  @keyframes o4s-rec-pulse {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, #f87171 60%, transparent);
+      opacity: 1;
+    }
+    70% {
+      box-shadow: 0 0 0 0.5rem color-mix(in srgb, #f87171 0%, transparent);
+      opacity: 0.85;
+    }
+    100% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, #f87171 0%, transparent);
+      opacity: 1;
+    }
+  }
+
+  /* ---- Stage / poster treatment ---- */
+  .o4s-video-stage {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 80% at 50% 20%, color-mix(in srgb, var(--o4s-demo-accent) 10%, transparent), transparent 55%),
+      #020617;
+    isolation: isolate;
+  }
+
+  /* Inner glow frame along stage edges on hover */
+  .o4s-video-glow {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--o4s-demo-accent) 35%, transparent),
+      inset 0 0 28px color-mix(in srgb, var(--o4s-demo-accent) 18%, transparent),
+      inset 0 0 48px color-mix(in srgb, var(--o4s-demo-accent-2) 10%, transparent);
+  }
+
+  .o4s-video-wrap:hover .o4s-video-glow,
+  .o4s-video-wrap:focus-within .o4s-video-glow {
+    opacity: 1;
+  }
+
+  .o4s-video-stage :global(.o4s-video) {
+    width: 100%;
+    display: block;
+    background: #020617;
+    transform: scale(1.01);
+    filter: saturate(1.05) contrast(1.04);
+    transition:
+      transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      filter 0.4s ease;
+  }
+
+  .o4s-video-wrap:hover .o4s-video-stage :global(.o4s-video),
+  .o4s-video-wrap:focus-within .o4s-video-stage :global(.o4s-video) {
+    transform: scale(1.035);
+    filter: saturate(1.12) contrast(1.06) brightness(1.03);
+  }
+
+  .o4s-video-wrap.is-playing .o4s-video-stage :global(.o4s-video) {
+    filter: saturate(1.08) contrast(1.03);
+  }
+
+  .o4s-video-scan {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 2px,
+      color-mix(in srgb, var(--o4s-demo-accent) 6%, transparent) 2px,
+      color-mix(in srgb, var(--o4s-demo-accent) 6%, transparent) 3px
+    );
+    opacity: 0.35;
+    mix-blend-mode: soft-light;
+    transition: opacity 0.35s ease;
+  }
+
+  .o4s-video-wrap.is-playing .o4s-video-scan {
+    opacity: 0.12;
+  }
+
+  .o4s-video-vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 75% 65% at 50% 45%, transparent 40%, rgb(2 6 23 / 55%) 100%),
+      linear-gradient(to top, rgb(2 6 23 / 55%) 0%, transparent 35%),
+      linear-gradient(to bottom, rgb(2 6 23 / 25%) 0%, transparent 18%);
+    transition: opacity 0.4s ease;
+  }
+
+  .o4s-video-wrap.is-playing .o4s-video-vignette {
+    opacity: 0.45;
+  }
+
+  .o4s-video-grid {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0.12;
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--o4s-demo-accent) 40%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--o4s-demo-accent) 40%, transparent) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black 20%, transparent 75%);
+    transition: opacity 0.35s ease;
+  }
+
+  .o4s-video-wrap:hover .o4s-video-grid,
+  .o4s-video-wrap:focus-within .o4s-video-grid {
+    opacity: 0.2;
+  }
+
+  .o4s-video-wrap.is-playing .o4s-video-grid {
+    opacity: 0.06;
+  }
+
+  /* Corner brackets */
+  .o4s-video-corners {
+    position: absolute;
+    inset: 0.55rem;
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  .o4s-corner {
+    position: absolute;
+    width: 1rem;
+    height: 1rem;
+    border-color: color-mix(in srgb, var(--o4s-demo-accent) 75%, white);
+    border-style: solid;
+    opacity: 0.55;
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--o4s-demo-accent) 50%, transparent));
+    transition:
+      opacity 0.3s ease,
+      width 0.3s ease,
+      height 0.3s ease;
+  }
+
+  .o4s-corner--tl {
+    top: 0;
+    left: 0;
+    border-width: 1.5px 0 0 1.5px;
+  }
+  .o4s-corner--tr {
+    top: 0;
+    right: 0;
+    border-width: 1.5px 1.5px 0 0;
+  }
+  .o4s-corner--bl {
+    bottom: 0;
+    left: 0;
+    border-width: 0 0 1.5px 1.5px;
+  }
+  .o4s-corner--br {
+    bottom: 0;
+    right: 0;
+    border-width: 0 1.5px 1.5px 0;
+  }
+
+  .o4s-video-wrap:hover .o4s-corner,
+  .o4s-video-wrap:focus-within .o4s-corner {
+    opacity: 0.95;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  /* ---- Play overlay ---- */
+  .o4s-video-play {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.85rem;
+    margin: 0;
+    padding: 1rem;
+    border: 0;
+    background:
+      radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--o4s-demo-accent) 12%, transparent), transparent 42%),
+      rgb(2 6 23 / 28%);
+    cursor: zoom-in;
+    color: white;
+    transition:
+      background 0.35s ease,
+      opacity 0.4s ease,
+      visibility 0.4s ease;
+  }
+
+  .o4s-video-play:hover,
+  .o4s-video-play:focus-visible {
+    background:
+      radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--o4s-demo-accent) 22%, transparent), transparent 48%),
+      rgb(2 6 23 / 38%);
+  }
+
+  .o4s-video-play:focus {
+    outline: none;
+  }
+
+  .o4s-video-play:focus-visible .o4s-play-btn {
+    outline: 2px solid var(--o4s-demo-accent);
+    outline-offset: 4px;
+    box-shadow:
+      0 0 0 4px color-mix(in srgb, var(--o4s-demo-accent) 25%, transparent),
+      0 0 32px color-mix(in srgb, var(--o4s-demo-accent) 45%, transparent);
+  }
+
+  .o4s-play-core {
+    position: relative;
+    width: 4.25rem;
+    height: 4.25rem;
+    display: grid;
+    place-items: center;
+  }
+
+  .o4s-play-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--o4s-demo-accent) 55%, transparent);
+    box-shadow: 0 0 18px -4px color-mix(in srgb, var(--o4s-demo-accent) 55%, transparent);
+    animation: o4s-play-ripple 2.4s ease-out infinite;
+  }
+
+  .o4s-play-ring--delay {
+    animation-delay: 1.2s;
+    border-color: color-mix(in srgb, var(--o4s-demo-accent-2) 45%, transparent);
+  }
+
+  .o4s-play-btn {
+    position: relative;
+    z-index: 1;
+    width: 3.35rem;
+    height: 3.35rem;
+    border-radius: 9999px;
+    display: grid;
+    place-items: center;
+    color: #04101a;
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--o4s-demo-accent) 92%, white),
+      var(--o4s-demo-accent-2)
+    );
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, white 25%, transparent) inset,
+      0 8px 28px -6px color-mix(in srgb, var(--o4s-demo-accent) 70%, transparent),
+      0 0 40px -8px color-mix(in srgb, var(--o4s-demo-accent-2) 50%, transparent);
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .o4s-play-btn svg {
+    margin-left: 0.12rem;
+  }
+
+  .o4s-video-play:hover .o4s-play-btn,
+  .o4s-video-play:focus-visible .o4s-play-btn {
+    transform: scale(1.06);
+  }
+
+  .o4s-play-hud {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--o4s-demo-accent) 85%, white);
+    padding: 0.35rem 0.7rem;
+    border-radius: 0.35rem;
+    border: 1px solid color-mix(in srgb, var(--o4s-demo-accent) 35%, transparent);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--o4s-demo-accent) 14%, transparent), transparent),
+      rgb(2 6 23 / 55%);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 0 20px -10px color-mix(in srgb, var(--o4s-demo-accent) 55%, transparent);
+    text-shadow: 0 0 12px color-mix(in srgb, var(--o4s-demo-accent) 40%, transparent);
+  }
+
+  .o4s-play-hud-tag {
+    color: white;
+  }
+
+  .o4s-play-hud-sep {
+    opacity: 0.45;
+  }
+
+  .o4s-play-hud-meta {
+    opacity: 0.8;
+  }
+
+  /* Soft-hide CTA while autoplaying; reveal on hover/focus for expand */
+  .o4s-video-wrap.is-playing .o4s-video-play {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .o4s-video-wrap.is-playing:hover .o4s-video-play,
+  .o4s-video-wrap.is-playing:focus-within .o4s-video-play {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    background:
+      radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--o4s-demo-accent) 10%, transparent), transparent 45%),
+      rgb(2 6 23 / 22%);
+  }
+
+  @keyframes o4s-play-ripple {
+    0% {
+      transform: scale(0.92);
+      opacity: 0.75;
+    }
+    100% {
+      transform: scale(1.45);
+      opacity: 0;
+    }
+  }
+
+  /* ---- Telemetry strip ---- */
+  .o4s-video-telemetry {
+    position: absolute;
+    left: 0.65rem;
+    right: 0.65rem;
+    bottom: 0.55rem;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    pointer-events: none;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--o4s-demo-accent) 70%, white);
+  }
+
+  .o4s-tel-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.22rem 0.5rem;
+    border-radius: 0.3rem;
+    border: 1px solid color-mix(in srgb, var(--o4s-demo-accent) 28%, transparent);
+    background: rgb(2 6 23 / 55%);
+    backdrop-filter: blur(6px);
+  }
+
+  .o4s-tel-dot {
+    width: 0.35rem;
+    height: 0.35rem;
+    border-radius: 9999px;
+    background: var(--o4s-demo-accent);
+    box-shadow: 0 0 8px var(--o4s-demo-accent);
+  }
+
+  .o4s-video-wrap.is-playing .o4s-tel-dot {
+    background: var(--o4s-demo-hot);
+    box-shadow: 0 0 8px var(--o4s-demo-hot);
+    animation: o4s-rec-pulse 1.6s ease-out infinite;
+  }
+
+  .o4s-tel-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    opacity: 0.75;
+    text-shadow: 0 1px 8px rgb(0 0 0 / 70%);
+  }
+
+  .o4s-tel-sep {
+    opacity: 0.4;
+  }
+
+  .o4s-tel-status {
+    color: color-mix(in srgb, var(--o4s-demo-accent) 80%, white);
+  }
+
+  .o4s-video-wrap.is-playing .o4s-tel-status {
+    color: var(--o4s-demo-hot);
+  }
+
+  .o4s-video-wrap :global(.o4s-caption) {
+    position: relative;
+    z-index: 3;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .o4s-rec-progress,
+    .o4s-rec-led,
+    .o4s-play-ring,
+    .o4s-tel-dot,
+    .o4s-video-stage :global(.o4s-video) {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    .o4s-video-wrap:hover .o4s-video-stage :global(.o4s-video),
+    .o4s-video-wrap:focus-within .o4s-video-stage :global(.o4s-video) {
+      transform: none;
+    }
+  }
+</style>

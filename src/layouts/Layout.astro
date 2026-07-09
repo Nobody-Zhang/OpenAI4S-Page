@@ -26,8 +26,23 @@ const { language, textDirection } = I18N;
 ---
 
 <!doctype html>
-<html lang={language} dir={textDirection} class="2xl:text-[20px]">
+<html lang={language} dir={textDirection} class="2xl:text-[20px] dark" data-lang="en">
   <head>
+    <script is:inline>
+      (function () {
+        try {
+          var k = 'o4s-lang';
+          var s = localStorage.getItem(k);
+          var lang = s === 'zh' || s === 'en' ? s : /^zh\b/i.test(navigator.language || '') ? 'zh' : 'en';
+          document.documentElement.setAttribute('data-lang', lang);
+          document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+          document.documentElement.classList.add('dark');
+        } catch (e) {
+          document.documentElement.setAttribute('data-lang', 'en');
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     <CommonMeta />
     <Favicons />
     <CustomStyles />
@@ -42,7 +57,8 @@ const { language, textDirection } = I18N;
     <ClientRouter fallback="swap" />
   </head>
 
-  <body class="antialiased text-default bg-page tracking-tight">
+  <body class="antialiased text-default bg-page tracking-tight o4s-nolan">
+    <div class="o4s-film-grain" aria-hidden="true"></div>
     <slot />
 
     <BasicScripts />

@@ -1,0 +1,819 @@
+---
+/**
+ * Dual-loop architecture visualization for OpenAI4S Code-as-Action.
+ * Outer loop: LLM → safety → kernel → artifacts (fold back / finish)
+ * Inner loop: kernel ↔ host RPC (mid-cell synchronous tools)
+ *
+ * Pure Astro + CSS (SVG). No runtime deps.
+ */
+interface Props {
+  /** Tighter layout for sidebars / narrow sections */
+  compact?: boolean;
+  class?: string;
+  /** Hide the outer/inner loop legend chips */
+  hideLegend?: boolean;
+}
+
+const { compact = false, class: className = '', hideLegend = false } = Astro.props;
+
+const uid = `af-${Math.random().toString(36).slice(2, 9)}`;
+
+const stages = [
+  {
+    id: 'llm',
+    label: 'LLM',
+    sub: 'emit code cell',
+    tone: 'cyan' as const,
+    detail: 'prose + one Python/R cell',
+  },
+  {
+    id: 'safety',
+    label: 'Safety',
+    sub: 'pre-exec screen',
+    tone: 'amber' as const,
+    detail: 'classifier gates every cell',
+  },
+  {
+    id: 'kernel',
+    label: 'Kernel',
+    sub: 'exec · persist',
+    tone: 'neon' as const,
+    detail: 'namespace stays resident',
+  },
+  {
+    id: 'rpc',
+    label: 'Host RPC',
+    sub: 'tools · fold · llm',
+    tone: 'violet' as const,
+    detail: 'sync mid-cell calls',
+  },
+  {
+    id: 'artifacts',
+    label: 'Artifacts',
+    sub: 'stdout · files · fold',
+    tone: 'cyan' as const,
+    detail: 'summary back to context',
+  },
+];
+
+const rpcChips = ['host.web_search', 'host.bash', 'host.llm', 'host.fold', 'host.save_artifact', 'host.submit_output'];
+---
+
+<figure
+  class:list={['o4s-arch', compact && 'o4s-arch--compact', className]}
+  aria-labelledby={`${uid}-title`}
+  data-o4s-arch
+>
+  <figcaption class="o4s-arch__chrome">
+    <span class="o4s-arch__chrome-left">
+      <span class="o4s-arch__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="o4s-arch__title" id={`${uid}-title`}>architecture · dual loop</span>
+    </span>
+    <span class="o4s-arch__chrome-right">
+      <span class="o4s-arch__live"><span class="o4s-arch__led"></span>code-as-action</span>
+    </span>
+  </figcaption>
+
+  {
+    !hideLegend && (
+      <div class="o4s-arch__legend" aria-hidden="true">
+        <span class="o4s-arch__legend-chip o4s-arch__legend-chip--outer">
+          <span class="o4s-arch__legend-swatch"></span>
+          outer · model turn
+        </span>
+        <span class="o4s-arch__legend-chip o4s-arch__legend-chip--inner">
+          <span class="o4s-arch__legend-swatch"></span>
+          inner · host RPC
+        </span>
+      </div>
+    )
+  }
+
+  <div class="o4s-arch__stage">
+    <!-- Desktop / tablet diagram -->
+    <div class="o4s-arch__diagram" role="img" aria-label="OpenAI4S dual-loop flow: LLM emits a code cell, safety screens it, the persistent kernel executes, mid-cell host RPC tools run, artifacts and summaries fold back to the model.">
+      <svg class="o4s-arch__wires" viewBox="0 0 1000 420" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id={`${uid}-outer`} x1="0" y1="0" x2="1000" y2="0" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#22d3ee" />
+            <stop offset="0.45" stop-color="#67e8f9" />
+            <stop offset="0.75" stop-color="#a78bfa" />
+            <stop offset="1" stop-color="#22d3ee" />
+          </linearGradient>
+          <linearGradient id={`${uid}-inner`} x1="420" y1="120" x2="700" y2="300" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#a78bfa" />
+            <stop offset="1" stop-color="#34d399" />
+          </linearGradient>
+          <linearGradient id={`${uid}-return`} x1="900" y1="80" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#a78bfa" stop-opacity="0.9" />
+            <stop offset="1" stop-color="#22d3ee" stop-opacity="0.55" />
+          </linearGradient>
+          <filter id={`${uid}-glow`} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="2.2" result="b"></feGaussianBlur>
+            <feMerge>
+              <feMergeNode in="b"></feMergeNode>
+              <feMergeNode in="SourceGraphic"></feMergeNode>
+            </feMerge>
+          </filter>
+          <marker id={`${uid}-arr-c`} markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0 0 L6 3 L0 6 Z" fill="#22d3ee"></path>
+          </marker>
+          <marker id={`${uid}-arr-v`} markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0 0 L6 3 L0 6 Z" fill="#a78bfa"></path>
+          </marker>
+          <marker id={`${uid}-arr-n`} markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0 0 L6 3 L0 6 Z" fill="#34d399"></path>
+          </marker>
+        </defs>
+
+        <!-- subtle HUD grid -->
+        <g class="o4s-arch__grid" opacity="0.22">
+          {
+            Array.from({ length: 11 }, (_, i) => (
+              <line x1={i * 100} y1="0" x2={i * 100} y2="420" stroke="currentColor" stroke-width="0.5" />
+            ))
+          }
+          {
+            Array.from({ length: 5 }, (_, i) => (
+              <line x1="0" y1={i * 105} x2="1000" y2={i * 105} stroke="currentColor" stroke-width="0.5" />
+            ))
+          }
+        </g>
+
+        <!-- OUTER LOOP: forward chain LLM → safety → kernel → artifacts -->
+        <g filter={`url(#${uid}-glow)`}>
+          <path
+            class="o4s-arch__dash o4s-arch__dash--outer"
+            d="M145 118 H255"
+            stroke={`url(#${uid}-outer)`}
+            stroke-width="2"
+            stroke-linecap="round"
+            marker-end={`url(#${uid}-arr-c)`}></path>
+          <path
+            class="o4s-arch__dash o4s-arch__dash--outer o4s-arch__dash--d1"
+            d="M355 118 H465"
+            stroke={`url(#${uid}-outer)`}
+            stroke-width="2"
+            stroke-linecap="round"
+            marker-end={`url(#${uid}-arr-c)`}></path>
+          <path
+            class="o4s-arch__dash o4s-arch__dash--outer o4s-arch__dash--d2"
+            d="M575 118 H685"
+            stroke={`url(#${uid}-outer)`}
+            stroke-width="2"
+            stroke-linecap="round"
+            marker-end={`url(#${uid}-arr-c)`}></path>
+          <path
+            class="o4s-arch__dash o4s-arch__dash--outer o4s-arch__dash--d3"
+            d="M795 118 H855"
+            stroke={`url(#${uid}-outer)`}
+            stroke-width="2"
+            stroke-linecap="round"
+            marker-end={`url(#${uid}-arr-c)`}></path>
+
+          <!-- return fold: artifacts → LLM (outer continues / finishes) -->
+          <path
+            class="o4s-arch__dash o4s-arch__dash--return"
+            d="M900 155 C940 155 960 200 960 240 C960 320 900 355 500 355 C160 355 40 310 40 230 C40 170 70 145 100 130"
+            stroke={`url(#${uid}-return)`}
+            stroke-width="1.75"
+            stroke-linecap="round"
+            marker-end={`url(#${uid}-arr-v)`}></path>
+        </g>
+
+        <!-- INNER LOOP: kernel ↔ host RPC -->
+        <g filter={`url(#${uid}-glow)`}>
+          <path
+            class="o4s-arch__dash o4s-arch__dash--inner"
+            d="M520 168 C520 210 520 230 520 255"
+            stroke={`url(#${uid}-inner)`}
+            stroke-width="2"
+            stroke-linecap="round"
+            marker-end={`url(#${uid}-arr-n)`}></path>
+          <path
+            class="o4s-arch__dash o4s-arch__dash--inner o4s-arch__dash--d2"
+            d="M560 255 C600 230 620 200 620 168"
+            stroke={`url(#${uid}-inner)`}
+            stroke-width="2"
+            stroke-linecap="round"
+            marker-end={`url(#${uid}-arr-v)`}></path>
+        </g>
+
+        <!-- loop labels along paths -->
+        <text class="o4s-arch__svg-label" x="500" y="388" text-anchor="middle">outer loop · continue or host.submit_output()</text>
+        <text class="o4s-arch__svg-label o4s-arch__svg-label--violet" x="640" y="230" text-anchor="start">inner · sync RPC</text>
+
+        <!-- pulse packets along outer path -->
+        <circle class="o4s-arch__packet o4s-arch__packet--a" r="3.5" fill="#22d3ee">
+          <animateMotion dur="4.5s" repeatCount="indefinite" path="M100 118 H255 H465 H685 H900"></animateMotion>
+        </circle>
+        <circle class="o4s-arch__packet o4s-arch__packet--b" r="3" fill="#a78bfa">
+          <animateMotion dur="6s" begin="1.2s" repeatCount="indefinite" path="M900 155 C940 155 960 200 960 240 C960 320 900 355 500 355 C160 355 40 310 40 230 C40 170 70 145 100 130"></animateMotion>
+        </circle>
+        <circle class="o4s-arch__packet o4s-arch__packet--c" r="3" fill="#34d399">
+          <animateMotion dur="2.8s" begin="0.4s" repeatCount="indefinite" path="M520 168 C520 210 520 230 520 255 C540 270 560 270 560 255 C600 230 620 200 620 168 C580 155 540 155 520 168"></animateMotion>
+        </circle>
+      </svg>
+
+      <!-- HTML nodes overlaid on the SVG coordinate system -->
+      <ol class="o4s-arch__nodes">
+        {
+          stages.map((s, i) => (
+            <li class:list={['o4s-arch__node', `o4s-arch__node--${s.tone}`, `o4s-arch__node--${s.id}`]} style={`--i:${i}`}>
+              <span class="o4s-arch__node-ring" aria-hidden="true"></span>
+              <span class="o4s-arch__node-core">
+                <strong>{s.label}</strong>
+                <span>{s.sub}</span>
+                {!compact && <em>{s.detail}</em>}
+              </span>
+              <span class="o4s-arch__node-idx" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+
+    <!-- Mobile stacked flow (no absolute overlay needed) -->
+    <ol class="o4s-arch__stack" aria-label="Architecture stages">
+      {
+        stages.map((s, i) => (
+          <li class:list={['o4s-arch__stack-item', `o4s-arch__node--${s.tone}`]}>
+            <div class="o4s-arch__stack-node">
+              <span class="o4s-arch__node-idx" aria-hidden="true">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <div>
+                <strong>{s.label}</strong>
+                <span>{s.sub}</span>
+              </div>
+            </div>
+            {i < stages.length - 1 && (
+              <div class="o4s-arch__stack-link" aria-hidden="true">
+                <span class="o4s-arch__stack-dash"></span>
+              </div>
+            )}
+          </li>
+        ))
+      }
+      <li class="o4s-arch__stack-note">
+        <span class="o4s-arch__stack-note-inner">
+          <strong>inner loop</strong>
+          mid-cell, kernel ⇄ host RPC (sync tools)
+        </span>
+        <span class="o4s-arch__stack-note-inner o4s-arch__stack-note-inner--outer">
+          <strong>outer loop</strong>
+          artifacts fold back until host.submit_output()
+        </span>
+      </li>
+    </ol>
+  </div>
+
+  {
+    !compact && (
+      <div class="o4s-arch__footer">
+        <p class="o4s-arch__footer-copy">
+          The model emits <strong>one code cell</strong>. A pre-exec <strong>safety</strong> classifier screens it, then
+          it runs in the <strong>persistent kernel</strong> — namespace persists, big objects stay resident. Mid-cell,
+          code makes synchronous <strong>host RPC</strong> calls. The host collects stdout &amp; artifacts; the outer
+          loop continues or finishes on <code>host.submit_output()</code>.
+        </p>
+        <div class="o4s-arch__chips">
+          {rpcChips.map((c) => (
+            <code class="o4s-arch__chip">{c}</code>
+          ))}
+        </div>
+      </div>
+    )
+  }
+</figure>
+
+<style>
+  .o4s-arch {
+    --arch-cyan: var(--o4s-cyan, #22d3ee);
+    --arch-violet: var(--o4s-violet, #a78bfa);
+    --arch-neon: var(--o4s-neon, #34d399);
+    --arch-amber: var(--o4s-amber, #fbbf24);
+    --arch-border: var(--o4s-border, rgb(30 41 59));
+    --arch-surface: var(--o4s-surface-solid, rgb(10 16 36));
+    --arch-code-bg: var(--o4s-code-bg, rgb(7 12 28));
+    --arch-head: var(--o4s-head-bg, rgb(10 16 36));
+    --arch-glow: var(--o4s-glow-strong, rgba(34, 211, 238, 0.4));
+
+    position: relative;
+    margin: 0;
+    border-radius: 1rem;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--arch-cyan) 22%, var(--arch-border));
+    background:
+      radial-gradient(80% 60% at 15% 0%, color-mix(in srgb, var(--arch-cyan) 12%, transparent), transparent 55%),
+      radial-gradient(70% 50% at 90% 20%, color-mix(in srgb, var(--arch-violet) 12%, transparent), transparent 55%),
+      var(--arch-code-bg);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--arch-cyan) 8%, transparent),
+      0 24px 60px -32px rgb(0 0 0 / 55%),
+      0 0 48px -24px var(--arch-glow);
+  }
+
+  .o4s-arch--compact .o4s-arch__diagram {
+    min-height: 280px;
+  }
+  .o4s-arch--compact .o4s-arch__wires {
+    min-height: 280px;
+  }
+  .o4s-arch--compact .o4s-arch__node-core em {
+    display: none;
+  }
+  .o4s-arch--compact .o4s-arch__footer {
+    display: none;
+  }
+
+  /* --- chrome bar --- */
+  .o4s-arch__chrome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem 1rem;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--aw-color-text-muted);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--arch-cyan) 8%, var(--arch-head)) 0%,
+      var(--arch-head) 100%
+    );
+    border-bottom: 1px solid color-mix(in srgb, var(--arch-cyan) 16%, var(--arch-border));
+  }
+  .o4s-arch__chrome-left,
+  .o4s-arch__chrome-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+  }
+  .o4s-arch__title {
+    text-transform: lowercase;
+    color: var(--aw-color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .o4s-arch__dots {
+    display: inline-flex;
+    gap: 0.28rem;
+  }
+  .o4s-arch__dots i {
+    display: block;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--arch-border) 80%, transparent);
+  }
+  .o4s-arch__dots i:nth-child(1) {
+    background: #fb7185;
+  }
+  .o4s-arch__dots i:nth-child(2) {
+    background: #fbbf24;
+  }
+  .o4s-arch__dots i:nth-child(3) {
+    background: #34d399;
+  }
+  .o4s-arch__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--arch-cyan);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .o4s-arch__led {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 9999px;
+    background: var(--arch-neon);
+    box-shadow: 0 0 8px var(--arch-neon);
+    animation: o4s-arch-pulse 2s ease-in-out infinite;
+  }
+
+  /* --- legend --- */
+  .o4s-arch__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.85rem;
+    padding: 0.75rem 1rem 0;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--aw-color-text-muted);
+  }
+  .o4s-arch__legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .o4s-arch__legend-swatch {
+    width: 1.1rem;
+    height: 2px;
+    border-radius: 2px;
+  }
+  .o4s-arch__legend-chip--outer .o4s-arch__legend-swatch {
+    background: linear-gradient(90deg, var(--arch-cyan), var(--arch-violet));
+    box-shadow: 0 0 8px var(--arch-glow);
+  }
+  .o4s-arch__legend-chip--inner .o4s-arch__legend-swatch {
+    background: linear-gradient(90deg, var(--arch-violet), var(--arch-neon));
+    box-shadow: 0 0 8px color-mix(in srgb, var(--arch-violet) 50%, transparent);
+  }
+
+  /* --- stage / diagram --- */
+  .o4s-arch__stage {
+    position: relative;
+    padding: 0.5rem 0.5rem 1rem;
+  }
+  .o4s-arch__diagram {
+    position: relative;
+    display: none;
+    min-height: 380px;
+  }
+  @media (min-width: 768px) {
+    .o4s-arch__diagram {
+      display: block;
+    }
+    .o4s-arch__stack {
+      display: none;
+    }
+  }
+  .o4s-arch__wires {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 360px;
+    color: color-mix(in srgb, var(--arch-cyan) 35%, transparent);
+  }
+  .o4s-arch__svg-label {
+    fill: color-mix(in srgb, var(--arch-cyan) 75%, white);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+  .o4s-arch__svg-label--violet {
+    fill: color-mix(in srgb, var(--arch-violet) 80%, white);
+  }
+
+  /* animated dashes */
+  .o4s-arch__dash {
+    stroke-dasharray: 6 8;
+    animation: o4s-arch-dash 1.1s linear infinite;
+  }
+  .o4s-arch__dash--d1 {
+    animation-delay: 0.15s;
+  }
+  .o4s-arch__dash--d2 {
+    animation-delay: 0.3s;
+  }
+  .o4s-arch__dash--d3 {
+    animation-delay: 0.45s;
+  }
+  .o4s-arch__dash--return {
+    stroke-dasharray: 4 10;
+    animation-duration: 1.6s;
+    opacity: 0.85;
+  }
+  .o4s-arch__dash--inner {
+    stroke-dasharray: 5 7;
+    animation-duration: 0.85s;
+  }
+  .o4s-arch__packet {
+    filter: drop-shadow(0 0 4px currentColor);
+  }
+
+  /* nodes overlay — positioned to match SVG layout */
+  .o4s-arch__nodes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .o4s-arch__node {
+    position: absolute;
+    width: min(148px, 16vw);
+    pointer-events: auto;
+    --tone: var(--arch-cyan);
+  }
+  .o4s-arch__node--cyan {
+    --tone: var(--arch-cyan);
+  }
+  .o4s-arch__node--violet {
+    --tone: var(--arch-violet);
+  }
+  .o4s-arch__node--neon {
+    --tone: var(--arch-neon);
+  }
+  .o4s-arch__node--amber {
+    --tone: var(--arch-amber);
+  }
+
+  /* positions: LLM, Safety, Kernel, Host RPC, Artifacts */
+  .o4s-arch__node--llm {
+    left: 4%;
+    top: 12%;
+  }
+  .o4s-arch__node--safety {
+    left: 24%;
+    top: 12%;
+  }
+  .o4s-arch__node--kernel {
+    left: 44%;
+    top: 12%;
+  }
+  .o4s-arch__node--rpc {
+    left: 44%;
+    top: 58%;
+  }
+  .o4s-arch__node--artifacts {
+    left: 78%;
+    top: 12%;
+  }
+
+  .o4s-arch__node-core {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.85rem 0.9rem 0.75rem;
+    border-radius: 0.85rem;
+    border: 1px solid color-mix(in srgb, var(--tone) 42%, var(--arch-border));
+    background:
+      radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--tone) 18%, transparent), transparent 60%),
+      color-mix(in srgb, var(--arch-surface) 92%, transparent);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--tone) 10%, transparent),
+      0 0 28px -12px color-mix(in srgb, var(--tone) 55%, transparent),
+      0 14px 32px -20px rgb(0 0 0 / 55%);
+    backdrop-filter: blur(8px);
+    transition:
+      border-color 0.25s ease,
+      box-shadow 0.25s ease,
+      transform 0.25s ease;
+  }
+  .o4s-arch__node:hover .o4s-arch__node-core {
+    border-color: color-mix(in srgb, var(--tone) 70%, var(--arch-border));
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--tone) 18%, transparent),
+      0 0 36px -8px color-mix(in srgb, var(--tone) 65%, transparent),
+      0 16px 36px -18px rgb(0 0 0 / 55%);
+    transform: translateY(-2px);
+  }
+  .o4s-arch__node-core strong {
+    font-family: var(--aw-font-heading), ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--aw-color-text-heading);
+    letter-spacing: -0.01em;
+  }
+  .o4s-arch__node-core span {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.68rem;
+    color: color-mix(in srgb, var(--tone) 85%, var(--aw-color-text-muted));
+    letter-spacing: 0.04em;
+  }
+  .o4s-arch__node-core em {
+    font-style: normal;
+    font-size: 0.68rem;
+    line-height: 1.35;
+    color: var(--aw-color-text-muted);
+    margin-top: 0.2rem;
+  }
+  .o4s-arch__node-idx {
+    position: absolute;
+    top: -0.45rem;
+    right: -0.35rem;
+    z-index: 2;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.12em;
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.3rem;
+    color: var(--tone);
+    border: 1px solid color-mix(in srgb, var(--tone) 40%, var(--arch-border));
+    background: color-mix(in srgb, var(--arch-surface) 90%, transparent);
+    box-shadow: 0 0 12px -6px color-mix(in srgb, var(--tone) 50%, transparent);
+  }
+  .o4s-arch__node-ring {
+    position: absolute;
+    inset: -6px;
+    border-radius: 1rem;
+    border: 1px dashed color-mix(in srgb, var(--tone) 28%, transparent);
+    opacity: 0.55;
+    animation: o4s-arch-ring 4s linear infinite;
+    animation-delay: calc(var(--i, 0) * 0.35s);
+  }
+
+  /* kernel highlight — the environment */
+  .o4s-arch__node--kernel .o4s-arch__node-core {
+    border-color: color-mix(in srgb, var(--arch-neon) 55%, var(--arch-border));
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--arch-neon) 14%, transparent),
+      0 0 40px -10px color-mix(in srgb, var(--arch-neon) 50%, transparent),
+      0 0 24px -8px color-mix(in srgb, var(--arch-cyan) 35%, transparent);
+  }
+
+  /* --- mobile stack --- */
+  .o4s-arch__stack {
+    list-style: none;
+    margin: 0;
+    padding: 0.75rem 0.65rem 0.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .o4s-arch__stack-item {
+    --tone: var(--arch-cyan);
+  }
+  .o4s-arch__stack-item.o4s-arch__node--violet {
+    --tone: var(--arch-violet);
+  }
+  .o4s-arch__stack-item.o4s-arch__node--neon {
+    --tone: var(--arch-neon);
+  }
+  .o4s-arch__stack-item.o4s-arch__node--amber {
+    --tone: var(--arch-amber);
+  }
+  .o4s-arch__stack-node {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-radius: 0.85rem;
+    border: 1px solid color-mix(in srgb, var(--tone) 40%, var(--arch-border));
+    background:
+      radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tone) 16%, transparent), transparent 55%),
+      color-mix(in srgb, var(--arch-surface) 92%, transparent);
+  }
+  .o4s-arch__stack-node .o4s-arch__node-idx {
+    position: static;
+    flex-shrink: 0;
+  }
+  .o4s-arch__stack-node strong {
+    display: block;
+    font-family: var(--aw-font-heading), ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.95rem;
+    color: var(--aw-color-text-heading);
+  }
+  .o4s-arch__stack-node span {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.7rem;
+    color: color-mix(in srgb, var(--tone) 85%, var(--aw-color-text-muted));
+  }
+  .o4s-arch__stack-link {
+    display: flex;
+    justify-content: center;
+    height: 1.25rem;
+  }
+  .o4s-arch__stack-dash {
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--arch-cyan), var(--arch-violet));
+    box-shadow: 0 0 8px var(--arch-glow);
+    background-size: 100% 200%;
+    animation: o4s-arch-stack-flow 1.2s linear infinite;
+  }
+  .o4s-arch__stack-note {
+    margin-top: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  .o4s-arch__stack-note-inner {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.03em;
+    color: var(--aw-color-text-muted);
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.55rem;
+    border: 1px solid color-mix(in srgb, var(--arch-violet) 28%, var(--arch-border));
+    background: color-mix(in srgb, var(--arch-violet) 8%, transparent);
+  }
+  .o4s-arch__stack-note-inner strong {
+    display: block;
+    color: var(--arch-violet);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.62rem;
+    margin-bottom: 0.2rem;
+  }
+  .o4s-arch__stack-note-inner--outer {
+    border-color: color-mix(in srgb, var(--arch-cyan) 28%, var(--arch-border));
+    background: color-mix(in srgb, var(--arch-cyan) 8%, transparent);
+  }
+  .o4s-arch__stack-note-inner--outer strong {
+    color: var(--arch-cyan);
+  }
+
+  /* --- footer --- */
+  .o4s-arch__footer {
+    padding: 0 1.15rem 1.15rem;
+    border-top: 1px solid color-mix(in srgb, var(--arch-cyan) 12%, var(--arch-border));
+    margin-top: 0.25rem;
+    padding-top: 1rem;
+  }
+  .o4s-arch__footer-copy {
+    margin: 0 0 0.85rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--aw-color-text-muted);
+  }
+  .o4s-arch__footer-copy strong {
+    color: var(--aw-color-text-default);
+    font-weight: 600;
+  }
+  .o4s-arch__footer-copy code {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.78em;
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.3rem;
+    border: 1px solid color-mix(in srgb, var(--arch-cyan) 30%, var(--arch-border));
+    color: var(--o4s-chip-fg, var(--arch-cyan));
+    background: color-mix(in srgb, var(--arch-cyan) 8%, transparent);
+  }
+  .o4s-arch__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .o4s-arch__chip {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.02em;
+    padding: 0.28rem 0.5rem;
+    border-radius: 0.4rem;
+    border: 1px solid color-mix(in srgb, var(--arch-cyan) 28%, var(--arch-border));
+    color: var(--o4s-chip-fg, var(--arch-cyan));
+    background: color-mix(in srgb, var(--arch-cyan) 8%, transparent);
+    box-shadow: 0 0 12px -8px var(--arch-glow);
+  }
+
+  /* --- keyframes --- */
+  @keyframes o4s-arch-dash {
+    to {
+      stroke-dashoffset: -28;
+    }
+  }
+  @keyframes o4s-arch-pulse {
+    0%,
+    100% {
+      opacity: 0.65;
+      box-shadow: 0 0 6px var(--arch-neon);
+    }
+    50% {
+      opacity: 1;
+      box-shadow: 0 0 12px var(--arch-neon);
+    }
+  }
+  @keyframes o4s-arch-ring {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes o4s-arch-stack-flow {
+    0% {
+      opacity: 0.35;
+      transform: scaleY(0.85);
+    }
+    50% {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+    100% {
+      opacity: 0.35;
+      transform: scaleY(0.85);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .o4s-arch__dash,
+    .o4s-arch__led,
+    .o4s-arch__node-ring,
+    .o4s-arch__stack-dash {
+      animation: none !important;
+    }
+    /* Hide SMIL-driven packets; solid wires stay visible */
+    .o4s-arch__packet {
+      display: none !important;
+    }
+    .o4s-arch__dash {
+      stroke-dasharray: none;
+    }
+    .o4s-arch__node:hover .o4s-arch__node-core {
+      transform: none;
+    }
+  }
+</style>

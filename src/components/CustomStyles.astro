@@ -7,37 +7,58 @@ import '@fontsource/jetbrains-mono/700.css';
 ---
 
 <style is:inline>
+  /* Early language — avoid FOUC */
+  html:not([data-lang='zh']) .o4s-i18n-zh {
+    display: none !important;
+  }
+  html[data-lang='zh'] .o4s-i18n-en {
+    display: none !important;
+  }
+
   :root {
     --aw-font-sans: 'Inter Variable';
     --aw-font-serif: 'Inter Variable';
     --aw-font-heading: 'Space Grotesk Variable';
     --aw-font-mono: 'JetBrains Mono';
 
-    /* Light — GitHub-canvas light */
-    --aw-color-primary: rgb(35 134 54); /* #238636 green */
-    --aw-color-secondary: rgb(26 106 43); /* #1a6a2b */
-    --aw-color-accent: rgb(130 82 217); /* #8252d9 purple */
+    /* Light — restrained film-print */
+    --aw-color-primary: rgb(146 98 32);
+    --aw-color-secondary: rgb(120 80 28);
+    --aw-color-accent: rgb(71 85 105);
 
-    --aw-color-text-heading: rgb(13 17 23); /* #0d1117 */
-    --aw-color-text-default: rgb(36 41 47); /* #24292f */
-    --aw-color-text-page: rgb(36 41 47);
-    --aw-color-text-muted: rgb(87 96 106); /* #57606a */
-    --aw-color-bg-page: rgb(255 255 255);
-    --aw-color-bg-page-alt: rgb(246 248 250); /* #f6f8fa */
-    --aw-color-bg-page-dark: rgb(13 17 23);
+    --aw-color-text-heading: rgb(15 15 16);
+    --aw-color-text-default: rgb(40 40 44);
+    --aw-color-text-page: rgb(40 40 44);
+    --aw-color-text-muted: rgb(90 90 98);
+    --aw-color-bg-page: rgb(244 243 240);
+    --aw-color-bg-page-alt: rgb(232 231 226);
+    --aw-color-bg-page-dark: rgb(0 0 0);
 
-    /* OpenAI4S custom tokens */
-    --o4s-amber: rgb(146 62 6); /* #923e06 — money moments (AA on light) */
-    --o4s-chip-fg: rgb(20 100 47); /* #14642f — darker green for AA on tint */
-    --o4s-border: rgb(208 215 222); /* #d0d7de */
-    --o4s-code-blue: rgb(4 102 173);
-    --o4s-code-bg: rgb(246 248 250);
-    --o4s-head-bg: rgb(246 248 250);
-    --o4s-glow: rgba(35, 134, 54, 0.1);
+    --o4s-amber: rgb(146 98 32);
+    --o4s-chip-fg: rgb(120 80 28);
+    --o4s-border: rgb(200 198 190);
+    --o4s-code-blue: rgb(55 75 100);
+    --o4s-code-bg: rgb(255 255 253);
+    --o4s-head-bg: rgb(236 235 230);
+    --o4s-glow: rgba(146, 98, 32, 0.1);
+    --o4s-glow-strong: rgba(146, 98, 32, 0.22);
+    --o4s-violet: rgb(90 90 110);
+    --o4s-cyan: rgb(70 95 120);
+    --o4s-neon: rgb(100 110 100);
+    --o4s-surface: rgba(255, 255, 253, 0.8);
+    --o4s-surface-solid: rgb(250 249 245);
+    --o4s-scan: rgba(0, 0, 0, 0.03);
+    --o4s-magenta: rgb(120 80 70);
+    --o4s-grid: rgba(0, 0, 0, 0.06);
+    --o4s-glow-violet: rgba(70, 80, 110, 0.1);
+    --o4s-glow-neon: rgba(100, 110, 100, 0.1);
+    --o4s-steel: rgb(140 150 165);
+    --o4s-void: rgb(0 0 0);
+    --o4s-film: rgba(255, 250, 240, 0.03);
 
     ::selection {
-      background-color: rgba(35, 134, 54, 0.18);
-      color: rgb(13 17 23);
+      background-color: rgba(146, 98, 32, 0.22);
+      color: rgb(15 15 16);
     }
   }
 
@@ -47,30 +68,48 @@ import '@fontsource/jetbrains-mono/700.css';
     --aw-font-heading: 'Space Grotesk Variable';
     --aw-font-mono: 'JetBrains Mono';
 
-    /* Dark — GitHub-canvas dark, badge palette */
-    --aw-color-primary: rgb(63 185 80); /* #3fb950 */
-    --aw-color-secondary: rgb(46 160 67); /* #2ea043 */
-    --aw-color-accent: rgb(188 140 255); /* #bc8cff */
+    /*
+      Nolan / Interstellar void:
+      pure black, warm amber dock lights, cold steel, high contrast whites.
+      Restraint over neon.
+    */
+    --aw-color-primary: rgb(232 184 96); /* warm amber */
+    --aw-color-secondary: rgb(196 148 72);
+    --aw-color-accent: rgb(160 175 195); /* cold steel */
 
-    --aw-color-text-heading: rgb(230 237 243); /* #e6edf3 */
-    --aw-color-text-default: rgb(201 209 217); /* #c9d1d9 */
-    --aw-color-text-page: rgb(201 209 217);
-    --aw-color-text-muted: rgb(139 148 158); /* #8b949e */
-    --aw-color-bg-page: rgb(13 17 23); /* #0d1117 */
-    --aw-color-bg-page-alt: rgb(22 27 34); /* #161b22 */
-    --aw-color-bg-page-dark: rgb(13 17 23);
+    --aw-color-text-heading: rgb(244 242 238);
+    --aw-color-text-default: rgb(196 194 188);
+    --aw-color-text-page: rgb(196 194 188);
+    --aw-color-text-muted: rgb(120 120 128);
+    --aw-color-bg-page: rgb(0 0 0);
+    --aw-color-bg-page-alt: rgb(8 8 10);
+    --aw-color-bg-page-dark: rgb(0 0 0);
 
-    --o4s-amber: rgb(240 158 47); /* #f09e2f */
-    --o4s-chip-fg: rgb(63 185 80); /* #3fb950 */
-    --o4s-border: rgb(48 54 61); /* #30363d */
-    --o4s-code-blue: rgb(88 166 255); /* #58a6ff */
-    --o4s-code-bg: rgb(13 17 23);
-    --o4s-head-bg: rgb(22 27 34);
-    --o4s-glow: rgba(63, 185, 80, 0.12);
+    --o4s-amber: rgb(232 184 96);
+    --o4s-chip-fg: rgb(232 184 96);
+    --o4s-border: rgb(28 28 32);
+    --o4s-code-blue: rgb(160 175 195);
+    --o4s-code-bg: rgb(4 4 6);
+    --o4s-head-bg: rgb(10 10 12);
+    --o4s-glow: rgba(232, 184, 96, 0.14);
+    --o4s-glow-strong: rgba(232, 184, 96, 0.38);
+    --o4s-violet: rgb(140 150 175);
+    --o4s-cyan: rgb(160 175 195); /* steel, not neon cyan */
+    --o4s-neon: rgb(200 210 180); /* pale phosphor */
+    --o4s-surface: rgba(10, 10, 12, 0.72);
+    --o4s-surface-solid: rgb(8 8 10);
+    --o4s-scan: rgba(255, 248, 230, 0.02);
+    --o4s-magenta: rgb(180 120 100);
+    --o4s-grid: rgba(255, 255, 255, 0.04);
+    --o4s-glow-violet: rgba(140, 150, 175, 0.16);
+    --o4s-glow-neon: rgba(200, 210, 180, 0.12);
+    --o4s-steel: rgb(160 175 195);
+    --o4s-void: rgb(0 0 0);
+    --o4s-film: rgba(255, 236, 200, 0.028);
 
     ::selection {
-      background-color: rgba(63, 185, 80, 0.3);
-      color: rgb(230 237 243);
+      background-color: rgba(232, 184, 96, 0.32);
+      color: rgb(255 250 240);
     }
   }
 </style>

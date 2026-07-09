@@ -1,0 +1,529 @@
+---
+interface Props {
+  class?: string;
+  density?: number;
+}
+const { class: className = '', density = 48 } = Astro.props;
+---
+
+<canvas
+  class:list={['o4s-particles', className]}
+  data-o4s-particles
+  data-density={density}
+  aria-hidden="true"></canvas>
+
+<script>
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const isMobile = () =>
+    window.matchMedia('(max-width: 768px)').matches ||
+    window.matchMedia('(pointer: coarse)').matches ||
+    navigator.maxTouchPoints > 1;
+
+  type Particle = {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    ox: number;
+    oy: number;
+    r: number;
+    /** 0 = cyan, 1 = violet */
+    tone: number;
+    /** true for occasional pulse / hub nodes */
+    pulse: boolean;
+    phase: number;
+    phaseSpeed: number;
+  };
+
+  type Field = {
+    canvas: HTMLCanvasElement;
+    ctx: CanvasRenderingContext2D;
+    density: number;
+    particles: Particle[];
+    w: number;
+    h: number;
+    dpr: number;
+    raf: number;
+    running: boolean;
+    visible: boolean;
+    mobile: boolean;
+    linkDist: number;
+    mouseX: number;
+    mouseY: number;
+    mouseInside: boolean;
+    mouseActive: boolean;
+    t0: number;
+  };
+
+  const fields: Field[] = [];
+  let globalMouseX = 0;
+  let globalMouseY = 0;
+  let mouseListening = false;
+  let visibilityListening = false;
+  let motionListening = false;
+
+  /* Nolan void dust: warm amber dock-light + cold steel + bone white */
+  const CYAN = { r: 232, g: 184, b: 96 };   // amber
+  const VIOLET = { r: 160, g: 175, b: 195 }; // steel
+  const CORE = { r: 244, g: 242, b: 238 };
+
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  const mixTone = (t: number) => ({
+    r: Math.round(lerp(CYAN.r, VIOLET.r, t)),
+    g: Math.round(lerp(CYAN.g, VIOLET.g, t)),
+    b: Math.round(lerp(CYAN.b, VIOLET.b, t)),
+  });
+  const rgba = (c: { r: number; g: number; b: number }, a: number) =>
+    `rgba(${c.r},${c.g},${c.b},${a})`;
+
+  const particleCount = (w: number, h: number, density: number) => {
+    const area = w * h;
+    // Lower density on small / coarse-pointer devices
+    const mobileScale = isMobile() ? 0.72 : 1;
+    const base = (area / (14500 / (density / 48))) * mobileScale;
+    const min = isMobile() ? 28 : 48;
+    const max = isMobile() ? 90 : 220;
+    return Math.max(min, Math.min(max, Math.floor(base * 1.55)));
+  };
+
+  const spawnParticles = (w: number, h: number, count: number): Particle[] => {
+    const out: Particle[] = [];
+    for (let i = 0; i < count; i++) {
+      const x = Math.random() * w;
+      const y = Math.random() * h;
+      const pulse = Math.random() < 0.1;
+      const speed = pulse ? 0.18 : 0.32;
+      out.push({
+        x,
+        y,
+        ox: x,
+        oy: y,
+        vx: (Math.random() - 0.5) * speed,
+        vy: (Math.random() - 0.5) * speed,
+        r: pulse ? Math.random() * 1.2 + 1.1 : Math.random() * 1.35 + 0.45,
+        tone: Math.random(),
+        pulse,
+        phase: Math.random() * Math.PI * 2,
+        phaseSpeed: pulse ? 0.012 + Math.random() * 0.018 : 0.006 + Math.random() * 0.01,
+      });
+    }
+    return out;
+  };
+
+  const resizeField = (field: Field) => {
+    const parent = field.canvas.parentElement;
+    if (!parent) return;
+
+    field.mobile = isMobile();
+    field.dpr = Math.min(window.devicePixelRatio || 1, field.mobile ? 1.5 : 1.75);
+    field.w = parent.clientWidth;
+    field.h = parent.clientHeight;
+
+    if (field.w < 2 || field.h < 2) return;
+
+    field.canvas.width = Math.floor(field.w * field.dpr);
+    field.canvas.height = Math.floor(field.h * field.dpr);
+    field.canvas.style.width = `${field.w}px`;
+    field.canvas.style.height = `${field.h}px`;
+    field.ctx.setTransform(field.dpr, 0, 0, field.dpr, 0, 0);
+
+    const count = particleCount(field.w, field.h, field.density);
+    field.particles = spawnParticles(field.w, field.h, count);
+    field.linkDist = Math.min(170, Math.max(100, Math.sqrt(field.w * field.h) * 0.11));
+  };
+
+  const updateMouseForField = (field: Field) => {
+    const parent = field.canvas.parentElement;
+    if (!parent) {
+      field.mouseInside = false;
+      return;
+    }
+    const rect = parent.getBoundingClientRect();
+    // Skip offscreen canvases for rect work if not visible
+    if (rect.bottom < 0 || rect.top > window.innerHeight) {
+      field.mouseInside = false;
+      return;
+    }
+    const x = globalMouseX - rect.left;
+    const y = globalMouseY - rect.top;
+    const pad = 40;
+    field.mouseInside =
+      x >= -pad && x <= rect.width + pad && y >= -pad && y <= rect.height + pad;
+    field.mouseX = x;
+    field.mouseY = y;
+  };
+
+  const step = (field: Field, now: number) => {
+    const { ctx, particles, w, h, linkDist, mobile } = field;
+    const mouseOn = field.mouseActive && field.mouseInside && !mobile;
+    const mx = field.mouseX;
+    const my = field.mouseY;
+    // Soft influence radii
+    const repelR = 110;
+    const attractR = 220;
+    const repelR2 = repelR * repelR;
+    const attractR2 = attractR * attractR;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Spatial grid for link culling
+    const cell = linkDist;
+    const cols = Math.max(1, Math.ceil(w / cell));
+    const rows = Math.max(1, Math.ceil(h / cell));
+    const grid: number[][] = Array.from({ length: cols * rows }, () => []);
+
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+
+      // Gentle drift + home spring so clusters stay coherent
+      p.vx += (Math.random() - 0.5) * 0.004;
+      p.vy += (Math.random() - 0.5) * 0.004;
+      p.vx += (p.ox - p.x) * 0.00035;
+      p.vy += (p.oy - p.y) * 0.00035;
+
+      if (mouseOn) {
+        const dx = p.x - mx;
+        const dy = p.y - my;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < repelR2 && d2 > 0.01) {
+          const d = Math.sqrt(d2);
+          const f = ((repelR - d) / repelR) * 0.045;
+          p.vx += (dx / d) * f;
+          p.vy += (dy / d) * f;
+        } else if (d2 < attractR2 && d2 > repelR2) {
+          const d = Math.sqrt(d2);
+          const f = ((attractR - d) / attractR) * 0.008;
+          p.vx -= (dx / d) * f;
+          p.vy -= (dy / d) * f;
+        }
+      }
+
+      // Clamp velocity
+      const maxV = p.pulse ? 0.55 : 0.75;
+      const sp = Math.hypot(p.vx, p.vy);
+      if (sp > maxV) {
+        p.vx = (p.vx / sp) * maxV;
+        p.vy = (p.vy / sp) * maxV;
+      }
+
+      p.x += p.vx;
+      p.y += p.vy;
+
+      // Soft bounce + keep origin near bounds
+      if (p.x < 0) {
+        p.x = 0;
+        p.vx = Math.abs(p.vx);
+      } else if (p.x > w) {
+        p.x = w;
+        p.vx = -Math.abs(p.vx);
+      }
+      if (p.y < 0) {
+        p.y = 0;
+        p.vy = Math.abs(p.vy);
+      } else if (p.y > h) {
+        p.y = h;
+        p.vy = -Math.abs(p.vy);
+      }
+
+      p.ox = Math.min(w, Math.max(0, p.ox + (Math.random() - 0.5) * 0.08));
+      p.oy = Math.min(h, Math.max(0, p.oy + (Math.random() - 0.5) * 0.08));
+
+      p.phase += p.phaseSpeed;
+
+      const cx = Math.min(cols - 1, Math.max(0, Math.floor(p.x / cell)));
+      const cy = Math.min(rows - 1, Math.max(0, Math.floor(p.y / cell)));
+      grid[cy * cols + cx].push(i);
+    }
+
+    // Links — cyan/violet dual-tone by average particle tone
+    const linkDist2 = linkDist * linkDist;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < particles.length; i++) {
+      const a = particles[i];
+      const acx = Math.floor(a.x / cell);
+      const acy = Math.floor(a.y / cell);
+      for (let oy = -1; oy <= 1; oy++) {
+        for (let ox = -1; ox <= 1; ox++) {
+          const nx = acx + ox;
+          const ny = acy + oy;
+          if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+          const bucket = grid[ny * cols + nx];
+          for (let k = 0; k < bucket.length; k++) {
+            const j = bucket[k];
+            if (j <= i) continue;
+            const b = particles[j];
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 >= linkDist2) continue;
+            const d = Math.sqrt(d2);
+            const strength = 1 - d / linkDist;
+            const alpha = strength * (a.pulse || b.pulse ? 0.34 : 0.22);
+            const tone = (a.tone + b.tone) * 0.5;
+            // Shift toward cyan or violet along the link via stroke color
+            const c = mixTone(tone);
+            ctx.strokeStyle = rgba(c, alpha);
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+
+            // Subtle dual-tone highlight: second pass near mid with opposite hue, only for strong links
+            if (strength > 0.55 && !mobile) {
+              const midX = (a.x + b.x) * 0.5;
+              const midY = (a.y + b.y) * 0.5;
+              const opp = mixTone(1 - tone);
+              ctx.strokeStyle = rgba(opp, alpha * 0.35);
+              ctx.beginPath();
+              ctx.moveTo(lerp(a.x, midX, 0.35), lerp(a.y, midY, 0.35));
+              ctx.lineTo(lerp(b.x, midX, 0.35), lerp(b.y, midY, 0.35));
+              ctx.stroke();
+            }
+          }
+        }
+      }
+    }
+
+    // Nodes
+    const t = (now - field.t0) * 0.001;
+    for (const p of particles) {
+      const breathe = 0.65 + 0.35 * Math.sin(p.phase);
+      const pulseBoost = p.pulse ? 0.55 + 0.45 * Math.sin(p.phase * 1.4 + t) : 0;
+      const glowR = p.r * (3.2 + breathe + pulseBoost * 2.4);
+      const c = mixTone(p.tone);
+
+      // Soft glow (single radial per particle — necessary for premium look)
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+      const coreA = p.pulse ? 0.95 : 0.82;
+      g.addColorStop(0, rgba(c, coreA * (0.55 + pulseBoost * 0.4)));
+      g.addColorStop(0.35, rgba(mixTone(1 - p.tone * 0.6), 0.28 + pulseBoost * 0.2));
+      g.addColorStop(1, rgba(c, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Occasional expanding pulse ring on hub nodes
+      if (p.pulse) {
+        const ring = (p.phase % (Math.PI * 2)) / (Math.PI * 2);
+        const ringR = p.r * 2 + ring * 18;
+        const ringA = (1 - ring) * 0.35;
+        ctx.strokeStyle = rgba(c, ringA);
+        ctx.lineWidth = 1.25;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, ringR, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Bright core
+      ctx.fillStyle = rgba(CORE, p.pulse ? 0.95 : 0.82);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * (1 + pulseBoost * 0.35), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  };
+
+  const tickField = (field: Field, now: number) => {
+    if (!field.running || !field.visible || document.hidden) {
+      field.raf = 0;
+      return;
+    }
+    updateMouseForField(field);
+    step(field, now);
+    field.raf = requestAnimationFrame((t) => tickField(field, t));
+  };
+
+  const startField = (field: Field) => {
+    if (field.running) return;
+    field.running = true;
+    if (!field.raf && field.visible && !document.hidden) {
+      field.raf = requestAnimationFrame((t) => tickField(field, t));
+    }
+  };
+
+  const stopField = (field: Field) => {
+    field.running = false;
+    if (field.raf) {
+      cancelAnimationFrame(field.raf);
+      field.raf = 0;
+    }
+  };
+
+  const ensureGlobalListeners = () => {
+    if (!mouseListening) {
+      mouseListening = true;
+      let idleTimer = 0;
+      window.addEventListener(
+        'pointermove',
+        (e) => {
+          globalMouseX = e.clientX;
+          globalMouseY = e.clientY;
+          for (const f of fields) f.mouseActive = true;
+          window.clearTimeout(idleTimer);
+          idleTimer = window.setTimeout(() => {
+            for (const f of fields) f.mouseActive = false;
+          }, 1800);
+        },
+        { passive: true }
+      );
+      document.documentElement.addEventListener(
+        'pointerleave',
+        () => {
+          for (const f of fields) {
+            f.mouseActive = false;
+            f.mouseInside = false;
+          }
+        },
+        { passive: true }
+      );
+    }
+
+    if (!visibilityListening) {
+      visibilityListening = true;
+      document.addEventListener(
+        'visibilitychange',
+        () => {
+          for (const f of fields) {
+            if (document.hidden) {
+              if (f.raf) {
+                cancelAnimationFrame(f.raf);
+                f.raf = 0;
+              }
+            } else if (f.running && f.visible) {
+              f.raf = requestAnimationFrame((t) => tickField(f, t));
+            }
+          }
+        },
+        { passive: true }
+      );
+    }
+
+    if (!motionListening) {
+      motionListening = true;
+      const onMotionChange = () => {
+        if (reduceMotion.matches) {
+          for (const f of fields) {
+            stopField(f);
+            f.canvas.style.display = 'none';
+          }
+          document.querySelectorAll<HTMLCanvasElement>('[data-o4s-particles]').forEach((c) => {
+            c.style.display = 'none';
+          });
+        } else {
+          // Re-init any canvases that were skipped under reduced motion
+          document.querySelectorAll<HTMLCanvasElement>('[data-o4s-particles]').forEach((c) => {
+            c.style.display = '';
+            if (c.dataset.o4sInit !== '1') initCanvas(c);
+          });
+          for (const f of fields) {
+            f.canvas.style.display = '';
+            resizeField(f);
+            if (!f.running) startField(f);
+            else if (f.visible && !document.hidden && !f.raf) {
+              f.raf = requestAnimationFrame((t) => tickField(f, t));
+            }
+          }
+        }
+      };
+      reduceMotion.addEventListener?.('change', onMotionChange);
+    }
+  };
+
+  const initCanvas = (canvas: HTMLCanvasElement) => {
+    if (canvas.dataset.o4sInit === '1') return;
+    canvas.dataset.o4sInit = '1';
+
+    if (reduceMotion.matches) {
+      canvas.style.display = 'none';
+      return;
+    }
+
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    // Assume on-screen until IntersectionObserver reports otherwise (hero-first)
+    const field: Field = {
+      canvas,
+      ctx,
+      density: Number(canvas.dataset.density || 48),
+      particles: [],
+      w: 0,
+      h: 0,
+      dpr: 1,
+      raf: 0,
+      running: false,
+      visible: true,
+      mobile: isMobile(),
+      linkDist: 120,
+      mouseX: 0,
+      mouseY: 0,
+      mouseInside: false,
+      mouseActive: false,
+      t0: performance.now(),
+    };
+    fields.push(field);
+
+    ensureGlobalListeners();
+    resizeField(field);
+
+    const ro = new ResizeObserver(() => {
+      const was = field.running;
+      if (field.raf) {
+        cancelAnimationFrame(field.raf);
+        field.raf = 0;
+      }
+      resizeField(field);
+      if (was && field.visible && !document.hidden) {
+        field.raf = requestAnimationFrame((t) => tickField(field, t));
+      }
+    });
+    ro.observe(canvas.parentElement || canvas);
+
+    // Pause when off-screen for multi-canvas pages
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          field.visible = entry.isIntersecting && entry.intersectionRatio > 0.02;
+          if (field.visible && field.running && !document.hidden && !field.raf) {
+            field.raf = requestAnimationFrame((t) => tickField(field, t));
+          } else if (!field.visible && field.raf) {
+            cancelAnimationFrame(field.raf);
+            field.raf = 0;
+          }
+        }
+      },
+      { root: null, threshold: [0, 0.02, 0.1] }
+    );
+    io.observe(canvas.parentElement || canvas);
+
+    startField(field);
+  };
+
+  const boot = () => {
+    document.querySelectorAll<HTMLCanvasElement>('[data-o4s-particles]').forEach(initCanvas);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
+
+  // Astro view transitions / late inserts
+  document.addEventListener('astro:page-load', boot);
+</script>
+
+<style>
+  .o4s-particles {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.55;
+  }
+  :global(.dark) .o4s-particles {
+    opacity: 0.78;
+  }
+</style>

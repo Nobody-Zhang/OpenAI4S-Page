@@ -1,0 +1,397 @@
+---
+interface Props {
+  /** Window chrome title (left side of the head bar). */
+  label?: string;
+  /** Live status text; set false to hide the LED + status. */
+  live?: string | false;
+  class?: string;
+}
+
+const {
+  label = 'kernel · python3 · host.rpc',
+  live = 'alive',
+  class: className = '',
+} = Astro.props;
+---
+
+<div class:list={['o4s-hero-terminal', className]}>
+  <!-- ambient bloom behind the chassis -->
+  <div class="o4s-hero-terminal__bloom" aria-hidden="true"></div>
+
+  <div class="o4s-hero-terminal__frame">
+    <div class="o4s-hero-terminal__inner">
+      <!-- HUD corner brackets -->
+      <span class="o4s-hero-terminal__corner o4s-hero-terminal__corner--tl" aria-hidden="true"></span>
+      <span class="o4s-hero-terminal__corner o4s-hero-terminal__corner--tr" aria-hidden="true"></span>
+      <span class="o4s-hero-terminal__corner o4s-hero-terminal__corner--bl" aria-hidden="true"></span>
+      <span class="o4s-hero-terminal__corner o4s-hero-terminal__corner--br" aria-hidden="true"></span>
+
+      <!-- top specular edge -->
+      <span class="o4s-hero-terminal__sheen" aria-hidden="true"></span>
+
+      <!-- CRT scanlines (static) -->
+      <div class="o4s-hero-terminal__scanlines" aria-hidden="true"></div>
+
+      <!-- head bar -->
+      <header class="o4s-hero-terminal__head">
+        <span class="o4s-hero-terminal__label">
+          <span class="o4s-hero-terminal__dots" aria-hidden="true">
+            <i></i>
+            <i></i>
+            <i></i>
+          </span>
+          <span class="o4s-hero-terminal__title">{label}</span>
+        </span>
+
+        {
+          live !== false && live !== '' && (
+            <span class="o4s-hero-terminal__live">
+              <span class="o4s-hero-terminal__led" aria-hidden="true" />
+              <span class="o4s-hero-terminal__live-text">{live}</span>
+            </span>
+          )
+        }
+      </header>
+
+      <!-- code body: pass pre/code HTML via default slot -->
+      <div class="o4s-hero-terminal__body">
+        <div class="o4s-hero-terminal__sweep" aria-hidden="true"></div>
+        <slot />
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .o4s-hero-terminal {
+    --ht-radius: 1.25rem;
+    --ht-corner: 15px;
+    --ht-corner-inset: 11px;
+    --ht-pad: 1px;
+
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* soft radial bloom — sits under the chassis */
+  .o4s-hero-terminal__bloom {
+    position: absolute;
+    inset: -1.75rem -1.5rem -1.25rem;
+    border-radius: 2rem;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.55;
+    filter: blur(42px);
+    background: radial-gradient(
+      circle at 50% 38%,
+      color-mix(in srgb, var(--o4s-cyan) 38%, transparent),
+      color-mix(in srgb, var(--o4s-violet) 18%, transparent) 48%,
+      transparent 72%
+    );
+  }
+
+  /* gradient bezel / chassis shell */
+  .o4s-hero-terminal__frame {
+    position: relative;
+    z-index: 1;
+    border-radius: var(--ht-radius);
+    padding: var(--ht-pad);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--o4s-cyan) 62%, white) 0%,
+      color-mix(in srgb, var(--o4s-cyan) 40%, transparent) 28%,
+      color-mix(in srgb, var(--o4s-violet) 32%, transparent) 58%,
+      color-mix(in srgb, var(--o4s-neon) 38%, transparent) 100%
+    );
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--o4s-cyan) 14%, transparent),
+      0 1px 0 color-mix(in srgb, var(--o4s-cyan) 35%, transparent) inset,
+      0 32px 88px -32px rgb(0 0 0 / 72%),
+      0 0 64px -18px var(--o4s-glow-strong);
+    transition:
+      box-shadow 0.35s ease,
+      transform 0.35s ease;
+  }
+
+  .o4s-hero-terminal:hover .o4s-hero-terminal__frame {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--o4s-cyan) 28%, transparent),
+      0 1px 0 color-mix(in srgb, var(--o4s-cyan) 45%, transparent) inset,
+      0 36px 96px -28px rgb(0 0 0 / 75%),
+      0 0 80px -12px var(--o4s-glow-strong);
+  }
+
+  .o4s-hero-terminal__inner {
+    position: relative;
+    border-radius: calc(var(--ht-radius) - var(--ht-pad));
+    overflow: hidden;
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--o4s-cyan) 10%, transparent) 0%,
+        transparent 42%
+      ),
+      radial-gradient(
+        120% 80% at 100% 0%,
+        color-mix(in srgb, var(--o4s-violet) 8%, transparent),
+        transparent 55%
+      ),
+      var(--o4s-code-bg);
+  }
+
+  /* top specular hairline */
+  .o4s-hero-terminal__sheen {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    z-index: 4;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--o4s-cyan) 75%, white) 35%,
+      color-mix(in srgb, var(--o4s-violet) 70%, white) 68%,
+      transparent 100%
+    );
+    opacity: 0.85;
+  }
+
+  /* HUD corner brackets */
+  .o4s-hero-terminal__corner {
+    position: absolute;
+    width: var(--ht-corner);
+    height: var(--ht-corner);
+    border-color: var(--o4s-cyan);
+    border-style: solid;
+    opacity: 0.9;
+    z-index: 5;
+    pointer-events: none;
+    filter: drop-shadow(0 0 5px var(--o4s-glow-strong));
+    transition: opacity 0.25s ease, filter 0.25s ease;
+  }
+
+  .o4s-hero-terminal:hover .o4s-hero-terminal__corner {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px var(--o4s-glow-strong));
+  }
+
+  .o4s-hero-terminal__corner--tl {
+    top: var(--ht-corner-inset);
+    left: var(--ht-corner-inset);
+    border-width: 2px 0 0 2px;
+  }
+  .o4s-hero-terminal__corner--tr {
+    top: var(--ht-corner-inset);
+    right: var(--ht-corner-inset);
+    border-width: 2px 2px 0 0;
+  }
+  .o4s-hero-terminal__corner--bl {
+    bottom: var(--ht-corner-inset);
+    left: var(--ht-corner-inset);
+    border-width: 0 0 2px 2px;
+  }
+  .o4s-hero-terminal__corner--br {
+    bottom: var(--ht-corner-inset);
+    right: var(--ht-corner-inset);
+    border-width: 0 2px 2px 0;
+  }
+
+  /* fine CRT scanline grid */
+  .o4s-hero-terminal__scanlines {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0.4;
+    mix-blend-mode: overlay;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      var(--o4s-scan) 2px,
+      var(--o4s-scan) 4px
+    );
+  }
+
+  /* chrome head */
+  .o4s-hero-terminal__head {
+    position: relative;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.72rem 1.15rem 0.68rem;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--o4s-cyan) 7%, transparent) 0%,
+      transparent 100%
+    );
+    border-bottom: 1px solid color-mix(in srgb, var(--o4s-cyan) 12%, var(--o4s-border));
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+  }
+
+  .o4s-hero-terminal__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+    color: var(--aw-color-text-muted);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+  }
+
+  .o4s-hero-terminal__title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .o4s-hero-terminal__dots {
+    display: inline-flex;
+    gap: 0.38rem;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .o4s-hero-terminal__dots i {
+    width: 0.58rem;
+    height: 0.58rem;
+    border-radius: 9999px;
+    display: inline-block;
+    opacity: 0.92;
+    box-shadow: 0 0 6px currentColor;
+  }
+
+  .o4s-hero-terminal__dots i:nth-child(1) {
+    background: #ff5f57;
+    color: #ff5f57;
+  }
+  .o4s-hero-terminal__dots i:nth-child(2) {
+    background: #febc2e;
+    color: #febc2e;
+  }
+  .o4s-hero-terminal__dots i:nth-child(3) {
+    background: #28c840;
+    color: #28c840;
+  }
+
+  /* live status + LED */
+  .o4s-hero-terminal__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+    flex-shrink: 0;
+    color: var(--o4s-neon);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.66rem;
+    font-weight: 500;
+    text-shadow: 0 0 12px color-mix(in srgb, var(--o4s-neon) 45%, transparent);
+  }
+
+  .o4s-hero-terminal__led {
+    width: 0.48rem;
+    height: 0.48rem;
+    border-radius: 9999px;
+    background: var(--o4s-neon);
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--o4s-neon) 55%, transparent),
+      0 0 8px color-mix(in srgb, var(--o4s-neon) 70%, transparent);
+    animation: o4s-ht-pulse 2s ease-out infinite;
+  }
+
+  .o4s-hero-terminal__live-text {
+    opacity: 0.95;
+  }
+
+  /* code body */
+  .o4s-hero-terminal__body {
+    position: relative;
+    z-index: 2;
+    padding: 0.85rem 1.25rem 1.25rem;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.82rem;
+    line-height: 1.75;
+    overflow-x: auto;
+    color: var(--aw-color-text-default);
+  }
+
+  .o4s-hero-terminal__body :global(pre) {
+    margin: 0;
+    white-space: pre;
+    font-family: inherit;
+  }
+
+  .o4s-hero-terminal__body :global(code) {
+    font-family: inherit;
+  }
+
+  /* moving scan beam */
+  .o4s-hero-terminal__sweep {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -30%;
+    height: 28%;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.7;
+    background: linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--o4s-cyan) 14%, transparent),
+      transparent
+    );
+    animation: o4s-ht-scan 5.5s ease-in-out infinite;
+  }
+
+  @keyframes o4s-ht-pulse {
+    0% {
+      box-shadow:
+        0 0 0 0 color-mix(in srgb, var(--o4s-neon) 55%, transparent),
+        0 0 8px color-mix(in srgb, var(--o4s-neon) 70%, transparent);
+    }
+    70% {
+      box-shadow:
+        0 0 0 0.55rem color-mix(in srgb, var(--o4s-neon) 0%, transparent),
+        0 0 8px color-mix(in srgb, var(--o4s-neon) 50%, transparent);
+    }
+    100% {
+      box-shadow:
+        0 0 0 0 color-mix(in srgb, var(--o4s-neon) 0%, transparent),
+        0 0 8px color-mix(in srgb, var(--o4s-neon) 70%, transparent);
+    }
+  }
+
+  @keyframes o4s-ht-scan {
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 0;
+    }
+    15% {
+      opacity: 0.75;
+    }
+    55% {
+      transform: translateY(320%);
+      opacity: 0.35;
+    }
+    70% {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .o4s-hero-terminal__led {
+      animation: none;
+    }
+    .o4s-hero-terminal__sweep {
+      animation: none;
+      display: none;
+    }
+  }
+</style>

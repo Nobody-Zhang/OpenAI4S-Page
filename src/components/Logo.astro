@@ -1,24 +1,72 @@
 ---
-import penta from '~/assets/openai4s/penta.gif';
-import pentaFrame from '~/assets/openai4s/penta-frame.png';
+import BrandMark from '~/components/openai4s/BrandMark.astro';
 ---
 
-<span class="inline-flex items-center gap-2 self-center">
-  <picture>
-    <source srcset={pentaFrame.src} media="(prefers-reduced-motion: reduce)" />
-    <img
-      src={penta.src}
-      alt="OpenAI4S logo"
-      width="30"
-      height="30"
-      class="w-[30px] h-[30px] shrink-0 rounded-md"
-      loading="eager"
-      decoding="async"
-    />
-  </picture>
-  <span
-    class="text-2xl md:text-xl font-bold tracking-tight font-heading text-gray-900 dark:text-white whitespace-nowrap"
-  >
-    OpenAI4S
+<span class="o4s-logo inline-flex items-center gap-2.5 self-center min-w-0">
+  <BrandMark size={28} motion="subtle" class="o4s-logo__mark shrink-0" />
+  <span class="o4s-logo__wordmark min-w-0">
+    <span class="o4s-logo__name">OpenAI<span class="o4s-gradient-text">4S</span></span>
+    <span class="o4s-logo__tag" aria-hidden="true">mission control</span>
   </span>
 </span>
+
+<style>
+  .o4s-logo {
+    line-height: 1;
+  }
+
+  .o4s-logo__mark {
+    display: block;
+  }
+
+  .o4s-logo__wordmark {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    justify-content: center;
+  }
+
+  .o4s-logo__name {
+    font-family: var(--aw-font-heading), ui-sans-serif, system-ui, sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--aw-color-text-heading);
+    white-space: nowrap;
+    line-height: 1.05;
+  }
+
+  .o4s-logo__tag {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.55rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--aw-color-text-muted);
+    white-space: nowrap;
+    line-height: 1;
+    opacity: 0.85;
+  }
+
+  @media (min-width: 768px) {
+    .o4s-logo {
+      gap: 0.65rem;
+    }
+
+    .o4s-logo__name {
+      font-size: 1.05rem;
+      letter-spacing: -0.015em;
+    }
+
+    .o4s-logo__tag {
+      font-size: 0.52rem;
+      letter-spacing: 0.18em;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .o4s-logo__tag {
+      display: none;
+    }
+  }
+</style>

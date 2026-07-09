@@ -1,0 +1,393 @@
+---
+import { Icon } from 'astro-icon/components';
+
+export interface SkillGroup {
+  label: string;
+  items: string[];
+  icon?: string;
+}
+
+interface Props {
+  groups?: SkillGroup[];
+  class?: string;
+}
+
+const { groups = [], class: className = '' } = Astro.props;
+
+/** Known-safe tabler icons used across the OpenAI4S site. Anything else falls back to a mono glyph. */
+const SAFE_TABLER = new Set([
+  'tabler:atom',
+  'tabler:microscope',
+  'tabler:puzzle',
+  'tabler:notebook',
+  'tabler:code',
+  'tabler:package',
+  'tabler:plug-connected',
+  'tabler:browser',
+  'tabler:cloud-cog',
+  'tabler:books',
+  'tabler:git-branch',
+  'tabler:key',
+  'tabler:switch-horizontal',
+  'tabler:cpu',
+  'tabler:packages',
+  'tabler:shield-check',
+  'tabler:check',
+  'tabler:star',
+  'tabler:brand-github',
+  'tabler:dna',
+  'tabler:flask',
+  'tabler:hexagon',
+  'tabler:layers-intersect',
+  'tabler:database',
+  'tabler:brain',
+  'tabler:molecule',
+]);
+
+const GLYPHS = ['◇', '◈', '▣', '⬡', '◎', '◆', '⬡', '▣'];
+
+function safeIcon(icon?: string): string | null {
+  if (!icon) return null;
+  return SAFE_TABLER.has(icon) ? icon : null;
+}
+
+function monoGlyph(index: number): string {
+  return GLYPHS[index % GLYPHS.length];
+}
+---
+
+{
+  groups.length > 0 && (
+    <div class:list={['o4s-skill-hex', className]} role="list">
+      {groups.map((group, gi) => {
+        const iconName = safeIcon(group.icon);
+        const items = group.items ?? [];
+        return (
+          <section class="o4s-skill-hex__group" role="listitem" aria-label={group.label}>
+            <header class="o4s-skill-hex__hud">
+              <span class="o4s-skill-hex__hud-rail" aria-hidden="true" />
+              <span class="o4s-skill-hex__hud-icon" aria-hidden="true">
+                {iconName ? (
+                  <Icon name={iconName} class="o4s-skill-hex__icon" />
+                ) : (
+                  <span class="o4s-skill-hex__glyph">{monoGlyph(gi)}</span>
+                )}
+              </span>
+              <span class="o4s-skill-hex__hud-label">{group.label}</span>
+              <span class="o4s-skill-hex__hud-meta">
+                <span class="o4s-skill-hex__hud-count">{String(items.length).padStart(2, '0')}</span>
+                <span class="o4s-skill-hex__hud-unit">SKILLS</span>
+              </span>
+              <span class="o4s-skill-hex__hud-rail o4s-skill-hex__hud-rail--end" aria-hidden="true" />
+            </header>
+
+            {items.length > 0 ? (
+              <ul class="o4s-skill-hex__grid">
+                {items.map((item, ii) => (
+                  <li class="o4s-skill-hex__cell">
+                    <span class="o4s-skill-hex__chip" data-idx={ii} title={item}>
+                      <span class="o4s-skill-hex__chip-edge" aria-hidden="true" />
+                      <span class="o4s-skill-hex__chip-core">
+                        <span class="o4s-skill-hex__chip-mark" aria-hidden="true">
+                          ▦
+                        </span>
+                        <span class="o4s-skill-hex__chip-text">{item}</span>
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p class="o4s-skill-hex__empty">// no modules loaded</p>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  )
+}
+
+<style>
+  .o4s-skill-hex {
+    display: grid;
+    gap: 1.25rem;
+    width: 100%;
+  }
+
+  @media (min-width: 768px) {
+    .o4s-skill-hex {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.35rem 1.25rem;
+    }
+  }
+
+  .o4s-skill-hex__group {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 0.9rem 0.95rem 1rem;
+    border-radius: 0.85rem;
+    border: 1px solid color-mix(in srgb, var(--o4s-cyan) 16%, var(--o4s-border));
+    background:
+      linear-gradient(160deg, color-mix(in srgb, var(--o4s-cyan) 7%, transparent), transparent 55%),
+      linear-gradient(0deg, color-mix(in srgb, var(--o4s-violet) 4%, transparent), transparent 40%),
+      color-mix(in srgb, var(--o4s-surface-solid) 92%, transparent);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--o4s-cyan) 6%, transparent),
+      0 12px 28px -22px rgb(0 0 0 / 45%);
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .o4s-skill-hex__group::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--o4s-cyan) 22%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--o4s-cyan) 22%, transparent) 1px, transparent 1px);
+    background-size: 18px 18px;
+    mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 10%, transparent 75%);
+  }
+
+  /* --- HUD group header --- */
+  .o4s-skill-hex__hud {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 1.75rem;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+  }
+
+  .o4s-skill-hex__hud-rail {
+    flex: 1 1 auto;
+    height: 1px;
+    min-width: 0.75rem;
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--o4s-cyan) 55%, transparent),
+      color-mix(in srgb, var(--o4s-cyan) 8%, transparent)
+    );
+    opacity: 0.85;
+  }
+
+  .o4s-skill-hex__hud-rail--end {
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--o4s-cyan) 8%, transparent),
+      color-mix(in srgb, var(--o4s-violet) 45%, transparent)
+    );
+  }
+
+  .o4s-skill-hex__hud-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    flex-shrink: 0;
+    color: var(--aw-color-primary);
+    border: 1px solid color-mix(in srgb, var(--o4s-cyan) 35%, var(--o4s-border));
+    background: color-mix(in srgb, var(--o4s-cyan) 10%, transparent);
+    clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0% 50%);
+    box-shadow: 0 0 14px -6px var(--o4s-glow-strong);
+  }
+
+  .o4s-skill-hex__icon {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  .o4s-skill-hex__glyph {
+    font-size: 0.72rem;
+    line-height: 1;
+    color: var(--aw-color-primary);
+    text-shadow: 0 0 10px var(--o4s-glow-strong);
+  }
+
+  .o4s-skill-hex__hud-label {
+    flex: 0 1 auto;
+    max-width: 55%;
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--aw-color-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 0 16px var(--o4s-glow-strong);
+  }
+
+  .o4s-skill-hex__hud-meta {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    flex-shrink: 0;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--aw-color-text-muted);
+  }
+
+  .o4s-skill-hex__hud-count {
+    color: var(--aw-color-text-heading);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+  }
+
+  .o4s-skill-hex__hud-unit {
+    opacity: 0.75;
+  }
+
+  /* --- Chip grid --- */
+  .o4s-skill-hex__grid {
+    position: relative;
+    z-index: 1;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.4rem;
+  }
+
+  .o4s-skill-hex__cell {
+    margin: 0;
+    min-width: 0;
+  }
+
+  .o4s-skill-hex__chip {
+    --chip-border: color-mix(in srgb, var(--o4s-cyan) 28%, var(--o4s-border));
+    --chip-bg: color-mix(in srgb, var(--o4s-surface) 88%, transparent);
+    --chip-fg: var(--aw-color-text-default);
+    --chip-glow: transparent;
+
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    cursor: default;
+    transition:
+      transform 0.2s ease,
+      filter 0.2s ease;
+  }
+
+  .o4s-skill-hex__chip-edge {
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--chip-border);
+    background:
+      linear-gradient(145deg, color-mix(in srgb, var(--o4s-cyan) 10%, transparent), transparent 55%),
+      var(--chip-bg);
+    clip-path: polygon(0.55rem 0, calc(100% - 0.55rem) 0, 100% 50%, calc(100% - 0.55rem) 100%, 0.55rem 100%, 0 50%);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--o4s-cyan) 6%, transparent),
+      0 0 0 0 var(--chip-glow);
+    transition:
+      border-color 0.22s ease,
+      background 0.22s ease,
+      box-shadow 0.22s ease;
+  }
+
+  .o4s-skill-hex__chip-core {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.42rem 0.95rem 0.42rem 0.8rem;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    color: var(--chip-fg);
+    transition: color 0.22s ease, text-shadow 0.22s ease;
+  }
+
+  .o4s-skill-hex__chip-mark {
+    flex-shrink: 0;
+    font-size: 0.58rem;
+    opacity: 0.55;
+    color: var(--aw-color-primary);
+    transition: opacity 0.22s ease, color 0.22s ease, text-shadow 0.22s ease;
+  }
+
+  .o4s-skill-hex__chip-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Hover: cyan light-up */
+  .o4s-skill-hex__chip:hover,
+  .o4s-skill-hex__chip:focus-visible {
+    transform: translateY(-1px);
+    outline: none;
+  }
+
+  .o4s-skill-hex__chip:hover .o4s-skill-hex__chip-edge,
+  .o4s-skill-hex__chip:focus-visible .o4s-skill-hex__chip-edge {
+    --chip-border: color-mix(in srgb, var(--o4s-cyan) 72%, white);
+    --chip-bg: color-mix(in srgb, var(--o4s-cyan) 16%, var(--o4s-surface-solid));
+    border-color: var(--chip-border);
+    background:
+      linear-gradient(145deg, color-mix(in srgb, var(--o4s-cyan) 28%, transparent), transparent 60%),
+      var(--chip-bg);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--o4s-cyan) 22%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--o4s-cyan) 28%, transparent),
+      0 0 22px -4px var(--o4s-glow-strong),
+      0 0 36px -10px color-mix(in srgb, var(--o4s-cyan) 55%, transparent);
+  }
+
+  .o4s-skill-hex__chip:hover .o4s-skill-hex__chip-core,
+  .o4s-skill-hex__chip:focus-visible .o4s-skill-hex__chip-core {
+    color: var(--aw-color-primary);
+    text-shadow: 0 0 14px var(--o4s-glow-strong);
+  }
+
+  .o4s-skill-hex__chip:hover .o4s-skill-hex__chip-mark,
+  .o4s-skill-hex__chip:focus-visible .o4s-skill-hex__chip-mark {
+    opacity: 1;
+    color: var(--o4s-cyan);
+    text-shadow: 0 0 10px var(--o4s-glow-strong);
+  }
+
+  .o4s-skill-hex__empty {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--aw-color-text-muted);
+    opacity: 0.7;
+  }
+
+  @media (max-width: 479px) {
+    .o4s-skill-hex__hud-label {
+      max-width: 42%;
+      letter-spacing: 0.08em;
+    }
+
+    .o4s-skill-hex__chip-core {
+      padding: 0.38rem 0.8rem 0.38rem 0.7rem;
+      font-size: 0.68rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .o4s-skill-hex__chip,
+    .o4s-skill-hex__chip-edge,
+    .o4s-skill-hex__chip-core,
+    .o4s-skill-hex__chip-mark {
+      transition: none;
+    }
+  }
+</style>

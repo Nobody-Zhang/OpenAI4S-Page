@@ -1,0 +1,201 @@
+---
+/**
+ * MatrixRain — optional subtle matrix/hex rain overlay for hero backgrounds.
+ *
+ * Props:
+ * - density (number, default 28) — column density. Higher = more streams.
+ *   Scaled by container area; typical range ~12–48.
+ * - opacity (number, default 0.22) — canvas opacity (0–1). Keep low for subtlety.
+ * - class (string, optional) — extra classes merged onto the canvas.
+ *
+ * Accessibility: respects prefers-reduced-motion (hides canvas, no animation).
+ * Multiple instances: each canvas is initialized independently via data attributes.
+ *
+ * Usage (parent should be position:relative):
+ *   <MatrixRain density={24} opacity={0.18} class="hero-rain" />
+ */
+interface Props {
+  /** Column density; higher = denser streams. Default 28. */
+  density?: number;
+  /** Canvas opacity 0–1. Default 0.22 (subtle). */
+  opacity?: number;
+  /** Extra CSS classes on the canvas element. */
+  class?: string;
+}
+
+const { density = 28, opacity = 0.22, class: className = '' } = Astro.props;
+---
+
+<canvas
+  class:list={['o4s-matrix-rain', className]}
+  data-o4s-matrix-rain
+  data-density={density}
+  style={`opacity: ${opacity}`}
+  aria-hidden="true"></canvas>
+
+<script>
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const canvases = document.querySelectorAll<HTMLCanvasElement>('[data-o4s-matrix-rain]');
+
+  // Hex digits + a few matrix-style glyphs for a tech/sci look
+  const GLYPHS = '0123456789ABCDEF01AFφΔΣΩλµπ¤∙·';
+
+  type Drop = {
+    x: number;
+    y: number;
+    speed: number;
+    length: number;
+    chars: string[];
+    tick: number;
+    hue: 'cyan' | 'green';
+  };
+
+  canvases.forEach((canvas) => {
+    // Guard against double-init if script re-runs (e.g. view transitions)
+    if (canvas.dataset.o4sMatrixInit === '1') return;
+    canvas.dataset.o4sMatrixInit = '1';
+
+    if (reduce) {
+      canvas.style.display = 'none';
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const density = Math.max(8, Number(canvas.dataset.density || 28));
+
+    let drops: Drop[] = [];
+    let raf = 0;
+    let w = 0;
+    let h = 0;
+    let dpr = 1;
+    let fontSize = 13;
+    let colW = 14;
+
+    const randChar = () => GLYPHS[(Math.random() * GLYPHS.length) | 0];
+
+    const makeDrop = (x: number, y?: number): Drop => {
+      const length = 6 + ((Math.random() * 14) | 0);
+      return {
+        x,
+        y: y ?? Math.random() * -h * 1.2,
+        speed: 0.35 + Math.random() * 1.1,
+        length,
+        chars: Array.from({ length }, randChar),
+        tick: (Math.random() * 8) | 0,
+        hue: Math.random() > 0.55 ? 'cyan' : 'green',
+      };
+    };
+
+    const resize = () => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = parent.clientWidth;
+      h = parent.clientHeight;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // Density maps to approximate columns across width
+      const cols = Math.max(6, Math.round((w / 900) * density));
+      colW = w / cols;
+      fontSize = Math.max(11, Math.min(15, colW * 0.85));
+
+      drops = Array.from({ length: cols }, (_, i) => makeDrop(i * colW + colW * 0.35));
+    };
+
+    const colorFor = (hue: Drop['hue'], alpha: number) =>
+      hue === 'cyan' ? `rgba(34, 211, 238, ${alpha})` : `rgba(52, 211, 153, ${alpha})`;
+
+    const draw = () => {
+      // Full clear — overall strength comes from canvas opacity prop (keep subtle)
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+      ctx.textBaseline = 'top';
+
+      for (const d of drops) {
+        d.y += d.speed;
+        d.tick++;
+
+        // Occasionally mutate a character mid-stream
+        if (d.tick % 4 === 0) {
+          const idx = (Math.random() * d.chars.length) | 0;
+          d.chars[idx] = randChar();
+        }
+
+        for (let i = 0; i < d.chars.length; i++) {
+          const gy = d.y - i * (fontSize + 2);
+          if (gy < -fontSize || gy > h) continue;
+
+          const head = i === 0;
+          const fade = 1 - i / d.chars.length;
+          // Glyph alphas assume CSS canvas opacity handles global subtlety
+          const a = head ? 0.85 : Math.max(0.08, fade * 0.55);
+
+          if (head) {
+            ctx.fillStyle = 'rgba(226, 232, 240, 0.75)';
+            ctx.shadowColor = colorFor(d.hue, 0.55);
+            ctx.shadowBlur = 6;
+          } else {
+            ctx.fillStyle = colorFor(d.hue, a);
+            ctx.shadowBlur = 0;
+          }
+
+          ctx.fillText(d.chars[i], d.x, gy);
+        }
+
+        ctx.shadowBlur = 0;
+
+        // Recycle off-screen streams
+        if (d.y - d.length * (fontSize + 2) > h) {
+          Object.assign(d, makeDrop(d.x, -Math.random() * h * 0.4));
+        }
+      }
+
+      raf = requestAnimationFrame(draw);
+    };
+
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      resize();
+      raf = requestAnimationFrame(draw);
+    });
+    ro.observe(canvas.parentElement || canvas);
+    resize();
+    raf = requestAnimationFrame(draw);
+
+    document.addEventListener(
+      'visibilitychange',
+      () => {
+        if (document.hidden) cancelAnimationFrame(raf);
+        else raf = requestAnimationFrame(draw);
+      },
+      { passive: true }
+    );
+  });
+</script>
+
+<style>
+  .o4s-matrix-rain {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    /* opacity set via inline style from prop; dark mode slightly brighter */
+  }
+  :global(.dark) .o4s-matrix-rain {
+    filter: brightness(1.15);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .o4s-matrix-rain {
+      display: none;
+    }
+  }
+</style>

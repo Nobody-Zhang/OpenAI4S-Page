@@ -1,21 +1,33 @@
 ---
-
+import { ui } from '~/i18n/dict';
 ---
 
-<div
-  class="text-sm bg-slate-900 text-slate-300 dark:bg-[#161b22] dark:border-b dark:border-slate-800 dark:text-slate-400 hidden md:flex gap-2 items-center overflow-hidden px-3 py-2 relative text-ellipsis whitespace-nowrap justify-center"
->
-  <span class="bg-green-600/20 text-green-300 dark:text-green-400 font-semibold px-1.5 py-0.5 text-xs rounded font-mono"
-    >2026-07-06</span
-  >
-  <span class="font-medium">Open-sourced</span>
-  <span class="text-slate-400 dark:text-slate-500"
-    >— the Code-as-Action engine, the scientific web app, 24 Skills &amp; BYOC compute.</span
-  >
+<div class="o4s-announce o4s-cine-announce hidden md:flex items-center justify-center gap-3 px-4 py-2.5 relative overflow-hidden">
+  <span class="o4s-cine-kicker shrink-0">2026-07-06</span>
+  <span class="hidden sm:inline text-muted font-mono text-[0.65rem] tracking-[0.2em] opacity-40">//</span>
+  <span class="font-medium text-default text-sm tracking-wide">
+    <span class="o4s-i18n-en">{ui.en.ann_label}</span>
+    <span class="o4s-i18n-zh">{ui.zh.ann_label}</span>
+  </span>
+  <span class="text-muted text-sm truncate max-w-[42vw]">
+    <span class="o4s-i18n-en">{ui.en.ann_body}</span>
+    <span class="o4s-i18n-zh">{ui.zh.ann_body}</span>
+  </span>
   <a
     href="https://github.com/PKU-YuanGroup/OpenAI4S"
     target="_blank"
     rel="noopener"
-    class="text-green-400 hover:underline font-medium font-mono">Read the launch »</a
+    class="font-mono text-xs tracking-wider shrink-0 hover:underline"
+    style="color: var(--o4s-amber)"
   >
+    <span class="o4s-i18n-en">{ui.en.ann_cta}</span>
+    <span class="o4s-i18n-zh">{ui.zh.ann_cta}</span>
+  </a>
 </div>
+
+<style>
+  .o4s-cine-announce {
+    background: linear-gradient(90deg, rgb(0 0 0), color-mix(in srgb, var(--o4s-amber) 6%, #050505), rgb(0 0 0));
+    border-bottom: 1px solid color-mix(in srgb, var(--o4s-amber) 18%, transparent);
+  }
+</style>

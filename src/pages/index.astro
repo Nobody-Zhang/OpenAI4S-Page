@@ -1,29 +1,33 @@
 ---
 import Layout from '~/layouts/PageLayout.astro';
-import Features3 from '~/components/widgets/Features3.astro';
-import Stats from '~/components/widgets/Stats.astro';
-import FAQs from '~/components/widgets/FAQs.astro';
 import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
-import Button from '~/components/ui/Button.astro';
 import CodeCard from '~/components/openai4s/CodeCard.astro';
 import DemoVideo from '~/components/openai4s/DemoVideo.astro';
-import { Image } from 'astro:assets';
+import BrandMark from '~/components/openai4s/BrandMark.astro';
+import ParticleField from '~/components/openai4s/ParticleField.astro';
+import HudBadge from '~/components/openai4s/HudBadge.astro';
+import HeroTerminal from '~/components/openai4s/HeroTerminal.astro';
+import ProviderOrbit from '~/components/openai4s/ProviderOrbit.astro';
+import ParadigmCompare from '~/components/openai4s/ParadigmCompare.astro';
+import ArchitectureFlow from '~/components/openai4s/ArchitectureFlow.astro';
+import SkillHexGrid from '~/components/openai4s/SkillHexGrid.astro';
+import PricingPanel from '~/components/openai4s/PricingPanel.astro';
+import FaqGrid from '~/components/openai4s/FaqGrid.astro';
+import StatCounter from '~/components/openai4s/StatCounter.astro';
+import { Icon } from 'astro-icon/components';
 import arkPlan from '~/assets/openai4s/ark-plan.png';
-import penta from '~/assets/openai4s/penta.gif';
-import pentaFrame from '~/assets/openai4s/penta-frame.png';
+import { ui } from '~/i18n/dict';
 
 const GITHUB = 'https://github.com/PKU-YuanGroup/OpenAI4S';
 const ARCH = 'https://github.com/PKU-YuanGroup/OpenAI4S/blob/main/docs/architecture.md';
+const DOCS = 'https://github.com/PKU-YuanGroup/OpenAI4S/tree/main/docs';
+const t = ui;
 
 const metadata = {
   title: 'OpenAI4S — Open AI for Scientist',
   ignoreTitleTemplate: true,
 };
 
-const altBg = 'background-color: var(--aw-color-bg-page-alt)';
-const altBgLayer = '<div class="absolute inset-0" style="background-color: var(--aw-color-bg-page-alt)"></div>';
-
-// ---- Hero notebook cell (highlighted HTML, rendered via set:html) ----
 const heroCode = `<pre><code><span class="tok-out">In [1]:</span> <span class="tok-kw">from</span> openai4s <span class="tok-kw">import</span> agent
 
 hits   = [f <span class="tok-kw">for</span> f <span class="tok-kw">in</span> files <span class="tok-kw">if</span> pattern <span class="tok-kw">in</span> <span class="tok-fn">host.read_file</span>(f)]
@@ -33,17 +37,15 @@ frames = [<span class="tok-fn">pd.read_csv</span>(f) <span class="tok-kw">for</s
 
 <span class="tok-out">Out[1]:</span> <span class="tok-str">&lt;DataFrame 100000×20&gt;</span> <span class="tok-com">stays resident — only the summary hits context</span></code></pre>`;
 
-// ---- Paradigm code cell ----
-const paradigmCode = `<pre><code><span class="tok-com"># ReAct: ~14 round-trips (read → … → filter → sort → plot).   OpenAI4S: one code cell.</span>
+const paradigmCode = `<pre><code><span class="tok-com"># ReAct: ~14 round-trips.   OpenAI4S: one code cell.</span>
 hits   = [f <span class="tok-kw">for</span> f <span class="tok-kw">in</span> files <span class="tok-kw">if</span> pattern <span class="tok-kw">in</span> <span class="tok-fn">host.read_file</span>(f)]
 top3   = <span class="tok-fn">sorted</span>(hits, key=os.path.getsize, reverse=<span class="tok-kw">True</span>)[:<span class="tok-num">3</span>]
-frames = [<span class="tok-fn">pd.read_csv</span>(f) <span class="tok-kw">for</span> f <span class="tok-kw">in</span> top3]      <span class="tok-com"># a 100k-row DataFrame stays in the kernel...</span>
-<span class="tok-fn">host.save_artifact</span>(<span class="tok-fn">plot</span>(frames))             <span class="tok-com"># ...only "&lt;DataFrame 100000×20&gt;" hits context</span></code></pre>`;
+frames = [<span class="tok-fn">pd.read_csv</span>(f) <span class="tok-kw">for</span> f <span class="tok-kw">in</span> top3]
+<span class="tok-fn">host.save_artifact</span>(<span class="tok-fn">plot</span>(frames))</code></pre>`;
 
-// ---- Quickstart terminal ----
 const quickstart = `<pre><code><span class="tok-com">$</span> git clone https://github.com/PKU-YuanGroup/OpenAI4S <span class="tok-kw">&amp;&amp;</span> cd OpenAI4S
-<span class="tok-com">$</span> ./setup.sh     <span class="tok-com"># one-time: build the environment with uv</span>
-<span class="tok-com">$</span> ./start.sh     <span class="tok-com"># launch the web UI at http://127.0.0.1:8760/</span></code></pre>`;
+<span class="tok-com">$</span> ./setup.sh
+<span class="tok-com">$</span> ./start.sh     <span class="tok-com"># http://127.0.0.1:8760/</span></code></pre>`;
 
 const cmpRows = [
   { a: 'Action unit', r: 'One tool call (JSON)', c: '<strong>An arbitrary program</strong> (a code cell)' },
@@ -63,18 +65,32 @@ const cmpRows = [
   { a: 'Extending tools', r: 'Change the schema + the host', c: '<code>import</code> a library, or read a Skill' },
 ];
 
-const providers = {
-  ark: ['doubao', 'glm', 'kimi', 'deepseek', 'minimax'],
-  official: ['chatgpt', 'claude', 'gemini'],
-};
+const cmpRowsZh = [
+  { a: '动作单元', r: '一次工具调用 (JSON)', c: '<strong>任意程序</strong>（一个代码单元）' },
+  { a: '动作空间', r: '固定工具菜单', c: '<strong>图灵完备语言</strong>（Python / R）' },
+  { a: '循环与组合', r: '多轮编排', c: '<strong>一个单元内完成</strong> — <code>for</code>、<code>if</code>' },
+  { a: '中间状态', r: '存在模型上下文（文本）', c: '存在<strong>内核内存</strong>（真实对象）' },
+  { a: '大对象', r: '序列化回上下文', c: '常驻；<strong>仅返回摘要</strong>' },
+  { a: 'N 步操作', r: '≈ N 次模型往返', c: '<strong>一次往返</strong>可完成多步' },
+  { a: '扩展工具', r: '改 schema + host', c: '<code>import</code> 库，或读取 Skill' },
+];
 
-// Real skill directory names from the OpenAI4S repo (skills/). 14 GPU/model = structure + seq/omics/docking + design.
+const providers = ['doubao', 'glm', 'kimi', 'deepseek', 'minimax', 'chatgpt', 'claude', 'gemini'];
+
 const skillGroups = [
-  { label: 'Structure prediction', items: ['alphafold2', 'openfold3', 'boltz', 'chai1', 'esmfold2'] },
-  { label: 'Sequence · omics · docking', items: ['fair-esm2', 'evo2', 'borzoi', 'scgpt', 'scvi-tools', 'diffdock'] },
-  { label: 'Protein design', items: ['proteinmpnn', 'ligandmpnn', 'solublempnn'] },
   {
-    label: 'Research workflow + platform',
+    label: t.en.skills_g1,
+    items: ['alphafold2', 'openfold3', 'boltz', 'chai1', 'esmfold2'],
+    icon: 'tabler:atom',
+  },
+  {
+    label: t.en.skills_g2,
+    items: ['fair-esm2', 'evo2', 'borzoi', 'scgpt', 'scvi-tools', 'diffdock'],
+    icon: 'tabler:microscope',
+  },
+  { label: t.en.skills_g3, items: ['proteinmpnn', 'ligandmpnn', 'solublempnn'], icon: 'tabler:puzzle' },
+  {
+    label: t.en.skills_g4,
     items: [
       'literature-review',
       'paper-narrative',
@@ -87,474 +103,545 @@ const skillGroups = [
       'remote-compute-nvidia',
       'using-model-endpoint',
     ],
+    icon: 'tabler:notebook',
   },
+];
+
+const skillGroupsZh = [
+  { ...skillGroups[0], label: t.zh.skills_g1 },
+  { ...skillGroups[1], label: t.zh.skills_g2 },
+  { ...skillGroups[2], label: t.zh.skills_g3 },
+  { ...skillGroups[3], label: t.zh.skills_g4 },
 ];
 
 const demos = [
-  {
-    src: '/demos/demo-01.mp4',
-    poster: '/demos/demo-01-poster.jpg',
-    label: 'session · uniprot→structure',
-    caption: 'Live API workflow — from UniProt / RCSB to a 3D structure & report',
-  },
-  {
-    src: '/demos/demo-05.mp4',
-    poster: '/demos/demo-05-poster.jpg',
-    label: 'session · insulin P01308',
-    caption: 'Real-data analysis — human insulin INS (P01308): a reproducible report',
-  },
-  {
-    src: '/demos/demo-02.mp4',
-    poster: '/demos/demo-02-poster.jpg',
-    label: 'session · artifact edit',
-    caption: 'Visual artifact editing — “raise the confidence cutoff to 75” in one line',
-  },
-  {
-    src: '/demos/demo-06.mp4',
-    poster: '/demos/demo-06-poster.jpg',
-    label: 'session · chart edit',
-    caption: 'Annotation-driven chart editing — lasso a region & recolor the legend',
-  },
-  {
-    src: '/demos/demo-03.mp4',
-    poster: '/demos/demo-03-poster.jpg',
-    label: 'session · plan mode',
-    caption: 'Plan-mode research — artemisinin & paclitaxel solubility prediction',
-  },
-  {
-    src: '/demos/demo-04.mp4',
-    poster: '/demos/demo-04-poster.jpg',
-    label: 'session · protein design',
-    caption: 'Protein engineering — from sequence to ranked mutants & structural rationale',
-  },
+  { src: '/demos/demo-01.mp4', poster: '/demos/demo-01-poster.jpg', label: 'session · 01', capKey: 'demo_1' as const },
+  { src: '/demos/demo-05.mp4', poster: '/demos/demo-05-poster.jpg', label: 'session · 02', capKey: 'demo_2' as const },
+  { src: '/demos/demo-02.mp4', poster: '/demos/demo-02-poster.jpg', label: 'session · 03', capKey: 'demo_3' as const },
+  { src: '/demos/demo-06.mp4', poster: '/demos/demo-06-poster.jpg', label: 'session · 04', capKey: 'demo_4' as const },
+  { src: '/demos/demo-03.mp4', poster: '/demos/demo-03-poster.jpg', label: 'session · 05', capKey: 'demo_5' as const },
+  { src: '/demos/demo-04.mp4', poster: '/demos/demo-04-poster.jpg', label: 'session · 06', capKey: 'demo_6' as const },
 ];
 
-const hostChips = [
-  'host.web_search',
-  'host.bash',
-  'host.read_file',
-  'host.llm',
-  'host.delegate',
-  'host.compute',
-  'host.fold',
-  'host.save_artifact',
+const highlights = [
+  { titleKey: 'h1_t' as const, descKey: 'h1_d' as const, icon: 'tabler:code' },
+  { titleKey: 'h2_t' as const, descKey: 'h2_d' as const, icon: 'tabler:package' },
+  { titleKey: 'h3_t' as const, descKey: 'h3_d' as const, icon: 'tabler:plug-connected' },
+  { titleKey: 'h4_t' as const, descKey: 'h4_d' as const, icon: 'tabler:browser' },
+  { titleKey: 'h5_t' as const, descKey: 'h5_d' as const, icon: 'tabler:cloud-cog' },
+  { titleKey: 'h6_t' as const, descKey: 'h6_d' as const, icon: 'tabler:books' },
+];
+
+const stats = [
+  { amount: '24', key: 'stat_1' as const },
+  { amount: '14', key: 'stat_2' as const },
+  { amount: '8', key: 'stat_3' as const },
+  { amount: '206', key: 'stat_4' as const },
+  { amount: '¥9.9', key: 'stat_5' as const },
+  { amount: '0', key: 'stat_6' as const },
+  { amount: 'MIT', key: 'stat_7' as const },
+];
+
+const faqsEn = [
+  { title: t.en.faq1_t, description: t.en.faq1_d, icon: 'tabler:git-branch' },
+  { title: t.en.faq2_t, description: t.en.faq2_d, icon: 'tabler:key' },
+  { title: t.en.faq3_t, description: t.en.faq3_d, icon: 'tabler:switch-horizontal' },
+  { title: t.en.faq4_t, description: t.en.faq4_d, icon: 'tabler:cpu' },
+  { title: t.en.faq5_t, description: t.en.faq5_d, icon: 'tabler:packages' },
+  { title: t.en.faq6_t, description: t.en.faq6_d, icon: 'tabler:shield-check' },
+];
+const faqsZh = [
+  { title: t.zh.faq1_t, description: t.zh.faq1_d, icon: 'tabler:git-branch' },
+  { title: t.zh.faq2_t, description: t.zh.faq2_d, icon: 'tabler:key' },
+  { title: t.zh.faq3_t, description: t.zh.faq3_d, icon: 'tabler:switch-horizontal' },
+  { title: t.zh.faq4_t, description: t.zh.faq4_d, icon: 'tabler:cpu' },
+  { title: t.zh.faq5_t, description: t.zh.faq5_d, icon: 'tabler:packages' },
+  { title: t.zh.faq6_t, description: t.zh.faq6_d, icon: 'tabler:shield-check' },
 ];
 ---
 
 <Layout metadata={metadata}>
-  <!-- ======================= HERO ======================= -->
-  <section class="relative not-prose overflow-hidden">
+  <!-- ======================= HERO — IMAX void ======================= -->
+  <section class="relative not-prose overflow-hidden min-h-[100svh] flex items-center">
     <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+      <div class="absolute inset-0 bg-black"></div>
+      <div class="o4s-aurora absolute inset-0"></div>
+      <ParticleField density={96} />
       <div class="o4s-grid absolute inset-0"></div>
-      <div class="o4s-glow absolute inset-0"></div>
+      <div class="o4s-glow absolute inset-0 opacity-70"></div>
+      <div class="o4s-orb o4s-orb-a opacity-40"></div>
+      <div class="o4s-orb o4s-orb-b opacity-30"></div>
+      <div class="o4s-vignette absolute inset-0"></div>
+      <div class="o4s-noise absolute inset-0"></div>
     </div>
-    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-20 lg:py-24">
-      <div class="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-        <div class="text-center lg:text-left min-w-0">
-          <p class="o4s-prompt mb-4">In[1]: from openai4s import agent</p>
-          <h1
-            class="text-4xl md:text-5xl xl:text-6xl font-bold font-heading tracking-tight leading-[1.06] text-gray-900 dark:text-white"
-          >
-            Code is the action.<br />
-            <span class="text-primary">The kernel is the environment.</span>
-          </h1>
-          <p class="mt-5 text-lg md:text-xl text-muted max-w-xl mx-auto lg:mx-0">
-            An open-source, <span class="font-semibold">Code-as-Action</span> scientific research agent. It emits a cell of
-            real Python/R into a persistent Jupyter-style kernel — <span class="font-semibold">not</span> a
-            <code class="o4s-chip">tool_use</code> JSON menu. A Turing-complete action space, driven by a model key that costs
-            <span class="font-semibold" style="color: var(--o4s-amber)">¥9.9/month (≈ US$1.4)</span>.
-          </p>
-          <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-            <Button variant="primary" href={GITHUB} target="_blank" icon="tabler:star" text="Star on GitHub" />
-            <a href="#quickstart" class="btn-ghost" aria-label="Jump to the quickstart">$ git clone && ./start.sh</a>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 md:py-28 w-full">
+      <div class="grid lg:grid-cols-12 gap-12 lg:gap-10 items-center">
+        <div class="lg:col-span-6 text-center lg:text-left min-w-0">
+          <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2 mb-8">
+            <HudBadge label={t.en.hero_sys} value={t.en.hero_sys_v} tone="amber" class="o4s-i18n-en" />
+            <HudBadge label={t.zh.hero_sys} value={t.zh.hero_sys_v} tone="amber" class="o4s-i18n-zh" />
+            <HudBadge label={t.en.hero_kernel} value={t.en.hero_kernel_v} tone="cyan" class="o4s-i18n-en" />
+            <HudBadge label={t.zh.hero_kernel} value={t.zh.hero_kernel_v} tone="cyan" class="o4s-i18n-zh" />
+            <HudBadge label={t.en.hero_ark} value={t.en.hero_ark_v} tone="amber" class="o4s-i18n-en" />
+            <HudBadge label={t.zh.hero_ark} value={t.zh.hero_ark_v} tone="amber" class="o4s-i18n-zh" />
           </div>
-          <p class="mt-6 o4s-prompt text-muted" style="color: var(--aw-color-text-muted)">
-            MIT · pure stdlib · 206 tests passing · open-sourced 2026-07-06
-          </p>
-        </div>
-        <div class="w-full min-w-0">
-          <CodeCard label="kernel · python3" live="alive">
-            <Fragment set:html={heroCode} />
-          </CodeCard>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- ================= PROVIDERS (Brands) ================= -->
-  <section style={altBg} class="border-y border-[color:var(--o4s-border)]">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-12 text-center">
-      <h2 class="text-lg font-semibold text-default">
-        One <code class="o4s-chip">host.llm</code>, every model.
-      </h2>
-      <p class="text-muted text-sm mt-2">Switch providers from the UI — no code change.</p>
-      <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-        <span class="o4s-prompt mr-1">ark:</span>
-        {providers.ark.map((p) => <span class="o4s-pill">{p}</span>)}
-        <span class="mx-1 text-muted hidden sm:inline">·</span>
-        <span class="o4s-prompt mr-1">official:</span>
-        {providers.official.map((p) => <span class="o4s-pill">{p}</span>)}
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= PARADIGM (centerpiece) ================= -->
-  <WidgetWrapper id="paradigm" containerClass="max-w-7xl mx-auto">
-    <div class="text-center max-w-3xl mx-auto mb-10">
-      <p class="o4s-prompt mb-3"># ─── the paradigm</p>
-      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
-        Code-as-Action, not ReAct.
-      </h2>
-      <p class="mt-4 text-lg text-muted">
-        Most “AI agents” are ReAct + <code class="o4s-chip">tool_use</code>: one JSON tool call per step against a fixed
-        menu. OpenAI4S instead emits a cell of real Python/R that runs in a persistent kernel — every “tool” is a plain
-        function on an in-kernel <code class="o4s-chip">host</code> object. The action space is a Turing-complete language.
-      </p>
-    </div>
-
-    <!-- comparison -->
-    <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-[minmax(120px,0.7fr)_1fr_1fr] gap-0 cmp-card">
-      <div class="hidden md:block cmp-row" style="border-top:0"></div>
-      <div
-        class="cmp-row cmp-title-old font-semibold font-mono text-sm md:border-l md:border-[color:var(--o4s-border)]"
-        style="border-top:0"
-      >
-        ReAct + tool_use
-      </div>
-      <div
-        class="cmp-row cmp-title-new cmp-col-new font-semibold font-mono text-sm flex items-center gap-2 md:border-l md:border-[color:var(--o4s-border)]"
-        style="border-top:0"
-      >
-        <span class="nb-led"></span>Code-as-Action (OpenAI4S)
-      </div>
-      {
-        cmpRows.map((row) => (
-          <>
-            <div class="cmp-row cmp-label flex items-center" set:html={row.a} />
-            <div class="cmp-row text-muted md:border-l md:border-[color:var(--o4s-border)]" set:html={row.r} />
-            <div class="cmp-row cmp-col-new md:border-l md:border-[color:var(--o4s-border)]" set:html={row.c} />
-          </>
-        ))
-      }
-    </div>
-
-    <div class="max-w-4xl mx-auto mt-10">
-      <CodeCard label="~/OpenAI4S · one cell" live="one round-trip" dots={true}>
-        <Fragment set:html={paradigmCode} />
-      </CodeCard>
-    </div>
-  </WidgetWrapper>
-
-  <!-- ================= HIGHLIGHTS (Features3) ================= -->
-  <Features3
-    id="highlights"
-    title="What makes it different."
-    subtitle="Five load-bearing differences — every one verifiable in the repo."
-    columns={3}
-    bg={altBgLayer}
-    items={[
-      {
-        title: 'Code-as-Action engine',
-        description:
-          'A Jupyter-style persistent kernel <em>is</em> the action space. Namespace persists across cells; big objects stay resident, only summaries hit context.',
-        icon: 'tabler:code',
-      },
-      {
-        title: 'Pure-stdlib core',
-        description:
-          'The engine <em>and</em> the web server are stdlib-only (http.server + a hand-rolled WebSocket, no framework, no deps). The LLM client speaks OpenAI / Anthropic / Gemini over urllib alone.',
-        icon: 'tabler:package',
-      },
-      {
-        title: 'One-line multi-provider',
-        description:
-          'ark (doubao · glm · kimi · deepseek · minimax) plus official chatgpt · claude · gemini, behind a single host.llm; switch from the UI.',
-        icon: 'tabler:plug-connected',
-      },
-      {
-        title: 'Full scientific web app',
-        description:
-          'Live streaming turns, versioned artifacts (with a built-in 3Dmol viewer for .pdb/.cif), a live Notebook sharing the agent’s kernel, background & resume.',
-        icon: 'tabler:browser',
-      },
-      {
-        title: 'BYOC remote compute',
-        description:
-          'Dispatch GPU jobs to your own machines via ssh:&lt;alias&gt; or the bundled NVIDIA NIM provider; real host.fold (single-sequence Protenix / AF3-class) under a strict no-fabrication policy.',
-        icon: 'tabler:cloud-cog',
-      },
-      {
-        title: '24 bundled Skills',
-        description:
-          'Skills are recipes of code, not JSON schemas — a SKILL.md the agent imports into the kernel. 14 of them wrap GPU/model science tools.',
-        icon: 'tabler:books',
-      },
-    ]}
-  />
-
-  <!-- ================= DEMOS ================= -->
-  <WidgetWrapper id="demos" containerClass="max-w-7xl mx-auto">
-    <div class="text-center max-w-3xl mx-auto mb-10">
-      <p class="o4s-prompt mb-3"># ─── see it run</p>
-      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
-        Watch it do real science.
-      </h2>
-      <p class="mt-4 text-lg text-muted">Six real sessions — no fabricated UI. Hover to play.</p>
-    </div>
-    <div class="grid sm:grid-cols-2 gap-6 lg:gap-8">
-      {demos.map((d) => <DemoVideo src={d.src} poster={d.poster} label={d.label} caption={d.caption} />)}
-    </div>
-  </WidgetWrapper>
-
-  <!-- ================= DUAL LOOP ================= -->
-  <WidgetWrapper containerClass="max-w-6xl mx-auto" bg={altBgLayer}>
-    <div class="text-center max-w-3xl mx-auto mb-10">
-      <p class="o4s-prompt mb-3">In[2]: agent.loop()</p>
-      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
-        How it works — the dual loop.
-      </h2>
-    </div>
-    <div class="grid md:grid-cols-2 gap-6">
-      <div class="nb-card p-0">
-        <div class="nb-head">
-          <span>outer loop</span><span class="nb-live"><span class="nb-led"></span>kernel</span>
-        </div>
-        <div class="p-6 text-default">
-          <p>
-            The model emits prose + <strong>one code cell</strong>. A pre-exec safety classifier screens it, then it
-            runs in the <strong>persistent kernel</strong> — the namespace persists, stdout is captured. The host collects
-            stdout, artifacts, and resource usage, then continues or finishes. It ends only on
-            <code class="o4s-chip">host.submit_output()</code>.
-          </p>
-        </div>
-      </div>
-      <div class="nb-card p-0">
-        <div class="nb-head">
-          <span>inner loop</span><span class="nb-live"><span class="nb-led"></span>host rpc</span>
-        </div>
-        <div class="p-6 text-default">
-          <p class="mb-4">
-            Mid-cell, code makes synchronous <strong>host RPC calls</strong> — the loop that simply doesn’t exist in
-            <code class="o4s-chip">tool_use</code>:
-          </p>
-          <div class="flex flex-wrap gap-2">
-            {hostChips.map((h) => <code class="o4s-chip">{h}</code>)}
-          </div>
-        </div>
-      </div>
-    </div>
-  </WidgetWrapper>
-
-  <!-- ================= SKILLS ================= -->
-  <WidgetWrapper id="skills" containerClass="max-w-6xl mx-auto">
-    <div class="text-center max-w-3xl mx-auto mb-10">
-      <p class="o4s-prompt mb-3"># ─── 24 bundled Skills</p>
-      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
-        Skills are recipes of code.
-      </h2>
-      <p class="mt-4 text-lg text-muted">
-        Not JSON schemas — a <code class="o4s-chip">SKILL.md</code> the agent imports into the kernel. 24 bundled, 14 of them
-        wrapping GPU/model science tools.
-      </p>
-    </div>
-    <div class="grid sm:grid-cols-2 gap-6">
-      {
-        skillGroups.map((g) => (
-          <div class="nb-card p-6">
-            <p class="o4s-prompt mb-4">{g.label}</p>
-            <div class="flex flex-wrap gap-2">
-              {g.items.map((s) => (
-                <span class="o4s-pill">{s}</span>
-              ))}
+          <div class="flex items-center justify-center lg:justify-start gap-4 mb-7">
+            <BrandMark size={52} motion="orbit" />
+            <div class="text-left">
+              <p class="o4s-cine-kicker">
+                <span class="o4s-i18n-en">{t.en.hero_tagline}</span>
+                <span class="o4s-i18n-zh">{t.zh.hero_tagline}</span>
+              </p>
+              <p class="font-mono text-[0.7rem] tracking-[0.18em] text-muted mt-1 uppercase opacity-70">
+                <span class="o4s-i18n-en">{t.en.hero_type}</span>
+                <span class="o4s-i18n-zh">{t.zh.hero_type}</span>
+              </p>
             </div>
           </div>
-        ))
-      }
+
+          <h1 class="o4s-cine-title text-4xl sm:text-5xl xl:text-[3.65rem] font-heading">
+            <span class="o4s-i18n-en block">{t.en.hero_h1_a}</span>
+            <span class="o4s-i18n-zh block">{t.zh.hero_h1_a}</span>
+            <span class="o4s-gradient-text">
+              <span class="o4s-i18n-en">{t.en.hero_h1_b}</span>
+              <span class="o4s-i18n-zh">{t.zh.hero_h1_b}</span>
+            </span>
+          </h1>
+
+          <p class="o4s-cine-lead mt-7 mx-auto lg:mx-0">
+            <span class="o4s-i18n-en">{t.en.hero_lead}</span>
+            <span class="o4s-i18n-zh">{t.zh.hero_lead}</span>
+          </p>
+
+          <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            <a
+              href={GITHUB}
+              target="_blank"
+              rel="noopener"
+              class="btn-primary inline-flex items-center justify-center gap-2"
+            >
+              <Icon name="tabler:brand-github" class="w-5 h-5" />
+              <span class="o4s-i18n-en">{t.en.hero_cta_star}</span>
+              <span class="o4s-i18n-zh">{t.zh.hero_cta_star}</span>
+            </a>
+            <a href="#quickstart" class="btn-ghost">
+              <span class="o4s-i18n-en">{t.en.hero_cta_clone}</span>
+              <span class="o4s-i18n-zh">{t.zh.hero_cta_clone}</span>
+            </a>
+          </div>
+
+          <p class="mt-8 font-mono text-[0.68rem] tracking-[0.14em] uppercase text-muted">
+            <span class="o4s-i18n-en">{t.en.hero_status}</span>
+            <span class="o4s-i18n-zh">{t.zh.hero_status}</span>
+          </p>
+        </div>
+
+        <div class="lg:col-span-6 w-full min-w-0 relative">
+          <HeroTerminal label="kernel · python3 · host.rpc" live="alive">
+            <Fragment set:html={heroCode} />
+          </HeroTerminal>
+          <div class="mt-5 flex flex-wrap gap-2 justify-center lg:justify-start">
+            <span class="o4s-pill text-xs !py-1.5 !px-3">
+              <span class="o4s-i18n-en">{t.en.hero_chip_1}</span>
+              <span class="o4s-i18n-zh">{t.zh.hero_chip_1}</span>
+            </span>
+            <span class="o4s-pill text-xs !py-1.5 !px-3">
+              <span class="o4s-i18n-en">{t.en.hero_chip_2}</span>
+              <span class="o4s-i18n-zh">{t.zh.hero_chip_2}</span>
+            </span>
+            <span class="o4s-pill text-xs !py-1.5 !px-3">
+              <span class="o4s-i18n-en">{t.en.hero_chip_3}</span>
+              <span class="o4s-i18n-zh">{t.zh.hero_chip_3}</span>
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
-  </WidgetWrapper>
+  </section>
+
+  <div class="o4s-horizon max-w-6xl mx-auto"></div>
+
+  <!-- ================= PROVIDERS ================= -->
+  <section class="relative overflow-hidden o4s-cine-section border-y border-white/5">
+    <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+      <ParticleField density={64} />
+      <div class="o4s-vignette absolute inset-0 opacity-60"></div>
+    </div>
+    <div class="relative max-w-6xl mx-auto px-4 sm:px-6 text-center">
+      <p class="o4s-cine-kicker mb-3">
+        <span class="o4s-i18n-en">{t.en.providers_kicker}</span>
+        <span class="o4s-i18n-zh">{t.zh.providers_kicker}</span>
+      </p>
+      <h2 class="o4s-cine-title text-2xl md:text-3xl">
+        <span class="o4s-i18n-en">{t.en.providers_title}</span>
+        <span class="o4s-i18n-zh">{t.zh.providers_title}</span>
+      </h2>
+      <p class="text-muted text-sm mt-3 mb-10">
+        <span class="o4s-i18n-en">{t.en.providers_sub}</span>
+        <span class="o4s-i18n-zh">{t.zh.providers_sub}</span>
+      </p>
+      <ProviderOrbit providers={providers} />
+    </div>
+  </section>
+
+  <!-- ================= PARADIGM ================= -->
+  <section id="paradigm" class="o4s-cine-section relative">
+    <div class="absolute inset-0 pointer-events-none opacity-40" aria-hidden="true">
+      <ParticleField density={40} />
+    </div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-3xl mx-auto mb-14">
+        <p class="o4s-cine-kicker mb-5">
+          <span class="o4s-i18n-en">{t.en.paradigm_badge} · {t.en.paradigm_badge_v}</span>
+          <span class="o4s-i18n-zh">{t.zh.paradigm_badge} · {t.zh.paradigm_badge_v}</span>
+        </p>
+        <h2 class="o4s-cine-title text-3xl md:text-5xl">
+          <span class="o4s-i18n-en">{t.en.paradigm_title_a} </span>
+          <span class="o4s-i18n-zh">{t.zh.paradigm_title_a} </span>
+          <span class="o4s-gradient-text">
+            <span class="o4s-i18n-en">{t.en.paradigm_title_b}</span>
+            <span class="o4s-i18n-zh">{t.zh.paradigm_title_b}</span>
+          </span>
+        </h2>
+        <p class="o4s-cine-lead mt-6 mx-auto text-center">
+          <span class="o4s-i18n-en">{t.en.paradigm_lead}</span>
+          <span class="o4s-i18n-zh">{t.zh.paradigm_lead}</span>
+        </p>
+      </div>
+
+      <div class="o4s-i18n-en">
+        <ParadigmCompare rows={cmpRows} />
+      </div>
+      <div class="o4s-i18n-zh">
+        <ParadigmCompare rows={cmpRowsZh} oldTitle="ReAct + tool_use" newTitle="Code-as-Action" />
+      </div>
+
+      <div class="max-w-4xl mx-auto mt-14">
+        <CodeCard label="~/OpenAI4S · one cell" live="one round-trip" dots={true} accent="amber">
+          <Fragment set:html={paradigmCode} />
+        </CodeCard>
+      </div>
+    </div>
+  </section>
+
+  <div class="o4s-horizon max-w-5xl mx-auto"></div>
+
+  <!-- ================= HIGHLIGHTS ================= -->
+  <section id="highlights" class="o4s-cine-section relative">
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-3xl mx-auto mb-14">
+        <p class="o4s-cine-kicker mb-5">
+          <span class="o4s-i18n-en">{t.en.highlights_badge} · {t.en.highlights_badge_v}</span>
+          <span class="o4s-i18n-zh">{t.zh.highlights_badge} · {t.zh.highlights_badge_v}</span>
+        </p>
+        <h2 class="o4s-cine-title text-3xl md:text-5xl">
+          <span class="o4s-i18n-en">{t.en.highlights_title_a} </span>
+          <span class="o4s-i18n-zh">{t.zh.highlights_title_a} </span>
+          <span class="o4s-gradient-text">
+            <span class="o4s-i18n-en">{t.en.highlights_title_b}</span>
+            <span class="o4s-i18n-zh">{t.zh.highlights_title_b}</span>
+          </span>
+        </h2>
+        <p class="o4s-cine-lead mt-5 mx-auto text-center">
+          <span class="o4s-i18n-en">{t.en.highlights_sub}</span>
+          <span class="o4s-i18n-zh">{t.zh.highlights_sub}</span>
+        </p>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+        {
+          highlights.map((item) => (
+            <div class="o4s-feature o4s-sheen">
+              <div class="o4s-feature-icon">
+                <Icon name={item.icon} class="w-5 h-5" />
+              </div>
+              <h3 class="text-lg font-bold font-heading text-gray-900 dark:text-white mb-2">
+                <span class="o4s-i18n-en">{t.en[item.titleKey]}</span>
+                <span class="o4s-i18n-zh">{t.zh[item.titleKey]}</span>
+              </h3>
+              <p class="text-muted text-sm leading-relaxed">
+                <span class="o4s-i18n-en">{t.en[item.descKey]}</span>
+                <span class="o4s-i18n-zh">{t.zh[item.descKey]}</span>
+              </p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= DEMOS ================= -->
+  <section id="demos" class="relative overflow-hidden o4s-cine-section">
+    <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+      <ParticleField density={72} />
+      <div class="o4s-vignette absolute inset-0"></div>
+    </div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-3xl mx-auto mb-14">
+        <p class="o4s-cine-kicker mb-5">
+          <span class="o4s-i18n-en">{t.en.demos_badge} · {t.en.demos_badge_v}</span>
+          <span class="o4s-i18n-zh">{t.zh.demos_badge} · {t.zh.demos_badge_v}</span>
+        </p>
+        <h2 class="o4s-cine-title text-3xl md:text-5xl">
+          <span class="o4s-i18n-en">{t.en.demos_title_a} </span>
+          <span class="o4s-i18n-zh">{t.zh.demos_title_a} </span>
+          <span class="o4s-gradient-text">
+            <span class="o4s-i18n-en">{t.en.demos_title_b}</span>
+            <span class="o4s-i18n-zh">{t.zh.demos_title_b}</span>
+          </span>
+        </h2>
+        <p class="o4s-cine-lead mt-5 mx-auto text-center">
+          <span class="o4s-i18n-en">{t.en.demos_sub}</span>
+          <span class="o4s-i18n-zh">{t.zh.demos_sub}</span>
+        </p>
+      </div>
+      <div class="grid sm:grid-cols-2 gap-6 lg:gap-8">
+        {
+          demos.map((d) => (
+            <div>
+              <div class="o4s-i18n-en">
+                <DemoVideo src={d.src} poster={d.poster} label={d.label} caption={t.en[d.capKey]} />
+              </div>
+              <div class="o4s-i18n-zh">
+                <DemoVideo src={d.src} poster={d.poster} label={d.label} caption={t.zh[d.capKey]} />
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <div class="o4s-horizon max-w-5xl mx-auto"></div>
+
+  <!-- ================= ARCHITECTURE ================= -->
+  <section id="architecture" class="o4s-cine-section relative">
+    <div class="absolute inset-0 pointer-events-none opacity-50" aria-hidden="true">
+      <ParticleField density={52} />
+    </div>
+    <div class="relative max-w-6xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <p class="o4s-cine-kicker mb-5">
+          <span class="o4s-i18n-en">{t.en.arch_badge} · {t.en.arch_badge_v}</span>
+          <span class="o4s-i18n-zh">{t.zh.arch_badge} · {t.zh.arch_badge_v}</span>
+        </p>
+        <h2 class="o4s-cine-title text-3xl md:text-5xl">
+          <span class="o4s-i18n-en">{t.en.arch_title_a} </span>
+          <span class="o4s-i18n-zh">{t.zh.arch_title_a} </span>
+          <span class="o4s-gradient-text">
+            <span class="o4s-i18n-en">{t.en.arch_title_b}</span>
+            <span class="o4s-i18n-zh">{t.zh.arch_title_b}</span>
+          </span>
+        </h2>
+      </div>
+      <ArchitectureFlow />
+    </div>
+  </section>
+
+  <!-- ================= SKILLS ================= -->
+  <section id="skills" class="o4s-cine-section relative border-y border-white/5">
+    <div class="relative max-w-6xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <p class="o4s-cine-kicker mb-5">
+          <span class="o4s-i18n-en">{t.en.skills_badge} · {t.en.skills_badge_v}</span>
+          <span class="o4s-i18n-zh">{t.zh.skills_badge} · {t.zh.skills_badge_v}</span>
+        </p>
+        <h2 class="o4s-cine-title text-3xl md:text-5xl">
+          <span class="o4s-i18n-en">{t.en.skills_title_a} </span>
+          <span class="o4s-i18n-zh">{t.zh.skills_title_a} </span>
+          <span class="o4s-gradient-text">
+            <span class="o4s-i18n-en">{t.en.skills_title_b}</span>
+            <span class="o4s-i18n-zh">{t.zh.skills_title_b}</span>
+          </span>
+        </h2>
+        <p class="o4s-cine-lead mt-5 mx-auto text-center">
+          <span class="o4s-i18n-en">{t.en.skills_sub}</span>
+          <span class="o4s-i18n-zh">{t.zh.skills_sub}</span>
+        </p>
+      </div>
+      <div class="o4s-i18n-en">
+        <SkillHexGrid groups={skillGroups} />
+      </div>
+      <div class="o4s-i18n-zh">
+        <SkillHexGrid groups={skillGroupsZh} />
+      </div>
+    </div>
+  </section>
 
   <!-- ================= STATS ================= -->
-  <Stats
-    bg={altBgLayer}
-    stats={[
-      { amount: '24', title: 'Bundled Skills' },
-      { amount: '14', title: 'GPU/model Skills' },
-      { amount: '8', title: 'Model providers' },
-      { amount: '206', title: 'Tests passing' },
-      { amount: '¥9.9', title: 'Per month to run' },
-      { amount: '0', title: 'Core dependencies' },
-      { amount: 'MIT', title: 'License' },
-    ]}
-  />
+  <section class="relative py-16 md:py-24 overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+      <ParticleField density={80} />
+      <div class="o4s-glow-center absolute inset-0"></div>
+    </div>
+    <div class="relative max-w-6xl mx-auto px-4 sm:px-6">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+        {
+          stats.map((s) => (
+            <>
+              <div class="o4s-i18n-en">
+                <StatCounter value={s.amount} label={t.en[s.key]} />
+              </div>
+              <div class="o4s-i18n-zh">
+                <StatCounter value={s.amount} label={t.zh[s.key]} />
+              </div>
+            </>
+          ))
+        }
+      </div>
+    </div>
+  </section>
 
   <!-- ================= PRICING ================= -->
   <WidgetWrapper id="pricing" containerClass="max-w-6xl mx-auto">
-    <div class="text-center max-w-3xl mx-auto mb-10">
-      <p class="o4s-prompt mb-3"># ─── two ways to run</p>
-      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
-        Two ways to run — both cheap.
-      </h2>
-      <p class="mt-4 text-lg text-muted">
-        No frontier-model key required. Self-host free, or drive it for pocket change.
-      </p>
-    </div>
-    <div class="grid md:grid-cols-2 gap-6 items-start">
-      <div class="nb-card p-8 h-full">
-        <p class="o4s-prompt">self-host</p>
-        <div class="mt-3 flex items-baseline gap-2">
-          <span class="text-4xl font-bold font-heading text-gray-900 dark:text-white">Free</span>
-          <span class="text-muted font-mono text-sm">· MIT</span>
-        </div>
-        <p class="mt-3 text-muted">
-          Clone the repo, bring any key or none, all features. No frontier-model key required.
-        </p>
-        <ul class="mt-5 space-y-2 text-sm text-default">
-          <li>✓ Full Code-as-Action engine + web app</li>
-          <li>✓ 24 Skills, live Notebook, versioned artifacts</li>
-          <li>✓ BYOC GPU compute (ssh / NVIDIA NIM)</li>
-        </ul>
-        <div class="mt-6">
-          <Button variant="primary" href={GITHUB} target="_blank" icon="tabler:brand-github" text="Get it on GitHub" />
-        </div>
-      </div>
-      <div class="nb-card p-8 h-full" style="border-color: var(--o4s-amber); box-shadow: 0 0 0 1px var(--o4s-amber)">
-        <div class="flex items-center justify-between">
-          <p class="o4s-prompt" style="color: var(--o4s-amber)">doubao · volcengine ark</p>
-          <span
-            class="text-xs font-mono px-2 py-0.5 rounded"
-            style="background: color-mix(in srgb, var(--o4s-amber) 16%, transparent); color: var(--o4s-amber)"
-            >cheapest</span
-          >
-        </div>
-        <div class="mt-3 flex items-baseline gap-2">
-          <span class="text-4xl font-bold font-heading" style="color: var(--o4s-amber)">¥9.9</span>
-          <span class="text-muted font-mono text-sm">/ month (≈ US$1.4)</span>
-        </div>
-        <p class="mt-3 text-muted">
-          A Claude-Science-class agent for less than a cup of coffee. Pick the <code class="o4s-chip">ark</code> provider
-          in the UI.
-        </p>
-        <div class="mt-5 rounded-lg overflow-hidden border border-[color:var(--o4s-border)]">
-          <Image src={arkPlan} alt="Volcengine Ark Agent Plan — the Small tier is ¥9.9 / month" loading="lazy" />
-        </div>
-        <p class="mt-2 text-xs text-muted font-mono">
-          Volcengine Ark · Agent Plan (Personal) — the entry “Small” tier is ¥9.9 / month.
-        </p>
-      </div>
-    </div>
+    <PricingPanel
+      github={GITHUB}
+      arkImage={arkPlan}
+      title={t.en.pricing_title_a}
+      titleAccent={t.en.pricing_title_b}
+      subtitle={t.en.pricing_sub}
+      class="o4s-i18n-en"
+    />
+    <PricingPanel
+      github={GITHUB}
+      arkImage={arkPlan}
+      title={t.zh.pricing_title_a}
+      titleAccent={t.zh.pricing_title_b}
+      subtitle={t.zh.pricing_sub}
+      freeCtaText="在 GitHub 获取"
+      class="o4s-i18n-zh"
+    />
   </WidgetWrapper>
 
   <!-- ================= QUICKSTART ================= -->
-  <WidgetWrapper id="quickstart" containerClass="max-w-4xl mx-auto" bg={altBgLayer}>
-    <div class="text-center max-w-3xl mx-auto mb-8">
-      <p class="o4s-prompt mb-3"># ─── quickstart</p>
-      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
-        Up and running in three commands.
-      </h2>
+  <section id="quickstart" class="relative o4s-cine-section overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+      <ParticleField density={70} />
+      <div class="o4s-vignette absolute inset-0"></div>
     </div>
-    <div class="nb-card">
-      <div class="nb-head">
-        <span class="inline-flex items-center gap-2"><span class="nb-dots"><i></i><i></i><i></i></span>~/OpenAI4S</span>
-        <button
-          class="o4s-copy font-mono text-xs px-2 py-1 rounded border border-[color:var(--o4s-border)] hover:text-primary"
-          data-copy={`git clone https://github.com/PKU-YuanGroup/OpenAI4S && cd OpenAI4S\n./setup.sh\n./start.sh`}
-          >copy</button
-        >
+    <div class="relative max-w-4xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-3xl mx-auto mb-10">
+        <p class="o4s-cine-kicker mb-5">
+          <span class="o4s-i18n-en">{t.en.qs_badge} · {t.en.qs_badge_v}</span>
+          <span class="o4s-i18n-zh">{t.zh.qs_badge} · {t.zh.qs_badge_v}</span>
+        </p>
+        <h2 class="o4s-cine-title text-3xl md:text-5xl">
+          <span class="o4s-i18n-en">{t.en.qs_title_a} </span>
+          <span class="o4s-i18n-zh">{t.zh.qs_title_a} </span>
+          <span class="o4s-gradient-text">
+            <span class="o4s-i18n-en">{t.en.qs_title_b}</span>
+            <span class="o4s-i18n-zh">{t.zh.qs_title_b}</span>
+          </span>
+        </h2>
       </div>
-      <div class="nb-body"><Fragment set:html={quickstart} /></div>
-    </div>
-    <p class="mt-4 text-sm text-muted text-center">
-      No API key is needed to boot — set your model in the UI (Customize → Models). One-shot without the UI:
-      <code class="o4s-chip">uv run openai4s run "Compute the mean of [4,8,15,16,23,42] and submit it." -v</code>
-    </p>
-  </WidgetWrapper>
-
-  <!-- ================= FAQs ================= -->
-  <FAQs
-    title="Frequently asked questions"
-    tagline="FAQ"
-    columns={2}
-    items={[
-      {
-        title: 'What is Code-as-Action vs ReAct?',
-        description:
-          'ReAct emits one tool_use JSON per step against a fixed menu; OpenAI4S emits a full Python/R cell into a persistent kernel — a Turing-complete action space where loops, branches, and library calls happen in one round-trip and big objects stay resident.',
-        icon: 'tabler:git-branch',
-      },
-      {
-        title: 'Do I really not need a frontier key?',
-        description:
-          'Correct. No API key is needed to boot; set your model in the UI. It runs on Doubao via Volcengine Ark’s “Small” plan at ¥9.9/mo (≈ US$1.4), or bring your own chatgpt / claude / gemini key.',
-        icon: 'tabler:key',
-      },
-      {
-        title: 'Which models and providers?',
-        description:
-          'ark (doubao · glm · kimi · deepseek · minimax) plus official chatgpt · claude · gemini, all behind one host.llm, switchable from the UI.',
-        icon: 'tabler:switch-horizontal',
-      },
-      {
-        title: 'Do I need a GPU? What is BYOC / host.fold?',
-        description:
-          'No local GPU required. Dispatch GPU jobs to your own machines via ssh:&lt;alias&gt; or the bundled NVIDIA NIM provider; host.fold runs single-sequence Protenix / AF3-class folding under a strict no-fabrication policy.',
-        icon: 'tabler:cpu',
-      },
-      {
-        title: 'Is the core really dependency-free?',
-        description:
-          'Yes — the engine and web server are pure stdlib (http.server + a hand-rolled WebSocket, no framework); the LLM client speaks OpenAI/Anthropic/Gemini over urllib. The optional science extra pins numpy/pandas/matplotlib.',
-        icon: 'tabler:packages',
-      },
-      {
-        title: 'Is it safe? License?',
-        description:
-          'Defense-in-depth: a pre-exec safety classifier screens every cell before it runs in the kernel. See the Security doc. Released under the MIT license — github.com/PKU-YuanGroup/OpenAI4S.',
-        icon: 'tabler:shield-check',
-      },
-    ]}
-  />
-
-  <!-- ================= CREDIBILITY NOTE ================= -->
-  <section style={altBg} class="border-y border-[color:var(--o4s-border)]">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 py-8 text-center text-sm text-muted">
-      Independently reproduces the Code-as-Action paradigm (cf. Claude Science, CodeAct, ReAct). The science Skills
-      stand on ColabFold / AlphaFold, ESM, OpenFold, Boltz, Chai, ProteinMPNN, DiffDock, Evo2, Borzoi, scGPT, scVI-tools
-      and open data services (NCBI, UniProt, RCSB PDB, EBI, OpenAlex, Crossref).
+      <div class="nb-card o4s-border-glow">
+        <div class="nb-head">
+          <span class="inline-flex items-center gap-2">
+            <span class="nb-dots"><i></i><i></i><i></i></span>
+            ~/OpenAI4S
+          </span>
+          <button
+            class="o4s-copy font-mono text-xs px-2.5 py-1 rounded-md border transition hover:text-primary"
+            style="border-color: color-mix(in srgb, var(--o4s-amber) 30%, var(--o4s-border))"
+            data-copy={`git clone https://github.com/PKU-YuanGroup/OpenAI4S && cd OpenAI4S\n./setup.sh\n./start.sh`}
+            >copy</button
+          >
+        </div>
+        <div class="nb-body o4s-code-scan"><Fragment set:html={quickstart} /></div>
+      </div>
+      <p class="mt-5 text-sm text-muted text-center leading-relaxed">
+        <span class="o4s-i18n-en">{t.en.qs_note}</span>
+        <span class="o4s-i18n-zh">{t.zh.qs_note}</span>
+      </p>
+      <div class="mt-8 flex justify-center">
+        <a href={DOCS} target="_blank" rel="noopener" class="btn-ghost text-sm">
+          <span class="o4s-i18n-en">{t.en.qs_docs}</span>
+          <span class="o4s-i18n-zh">{t.zh.qs_docs}</span>
+        </a>
+      </div>
     </div>
   </section>
 
-  <!-- ================= CLOSING CTA ================= -->
-  <section class="relative overflow-hidden">
-    <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
-      <div class="o4s-glow-center absolute inset-0"></div>
-    </div>
-    <div class="relative max-w-4xl mx-auto px-4 sm:px-6 py-16 md:py-24 text-center">
-      <span
-        class="inline-flex mx-auto mb-6 rounded-2xl overflow-hidden shadow-lg"
-        style="border: 1px solid var(--o4s-border)"
-      >
-        <picture>
-          <source srcset={pentaFrame.src} media="(prefers-reduced-motion: reduce)" />
-          <img src={penta.src} alt="OpenAI4S" width="76" height="76" class="w-[76px] h-[76px]" />
-        </picture>
-      </span>
-      <p class="o4s-prompt mb-3">code is the action, the kernel is the environment.</p>
-      <h2 class="text-4xl md:text-5xl font-bold font-heading tracking-tight text-gray-900 dark:text-white">
-        Replicate Claude Science in two cuts.
-      </h2>
-      <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-        <Button variant="primary" href={GITHUB} target="_blank" icon="tabler:star" text="Star on GitHub" />
-        <a href={ARCH} target="_blank" rel="noopener" class="btn-ghost">Read the architecture</a>
+  <!-- ================= FAQ ================= -->
+  <section id="faq" class="o4s-cine-section relative">
+    <div class="relative max-w-6xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <p class="o4s-cine-kicker mb-5">
+          <span class="o4s-i18n-en">{t.en.faq_badge} · {t.en.faq_badge_v}</span>
+          <span class="o4s-i18n-zh">{t.zh.faq_badge} · {t.zh.faq_badge_v}</span>
+        </p>
+        <h2 class="o4s-cine-title text-3xl md:text-5xl">
+          <span class="o4s-i18n-en">{t.en.faq_title_a} </span>
+          <span class="o4s-i18n-zh">{t.zh.faq_title_a} </span>
+          <span class="o4s-gradient-text">
+            <span class="o4s-i18n-en">{t.en.faq_title_b}</span>
+            <span class="o4s-i18n-zh">{t.zh.faq_title_b}</span>
+          </span>
+        </h2>
       </div>
-      <p class="mt-8 o4s-prompt" style="color: var(--aw-color-text-muted)">
-        openai4s.org · MIT · Open AI for Scientist
+      <div class="o4s-i18n-en">
+        <FaqGrid items={faqsEn} />
+      </div>
+      <div class="o4s-i18n-zh">
+        <FaqGrid items={faqsZh} />
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CRED ================= -->
+  <section class="border-y border-white/5 py-10 bg-black">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center text-sm text-muted leading-relaxed">
+      <span class="o4s-i18n-en">{t.en.cred}</span>
+      <span class="o4s-i18n-zh">{t.zh.cred}</span>
+    </div>
+  </section>
+
+  <!-- ================= CTA ================= -->
+  <section class="relative overflow-hidden min-h-[70vh] flex items-center">
+    <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+      <div class="absolute inset-0 bg-black"></div>
+      <div class="o4s-aurora absolute inset-0"></div>
+      <ParticleField density={110} />
+      <div class="o4s-vignette absolute inset-0"></div>
+      <div class="o4s-noise absolute inset-0"></div>
+    </div>
+    <div class="relative max-w-4xl mx-auto px-4 sm:px-6 py-24 text-center">
+      <div class="inline-flex mx-auto mb-10">
+        <BrandMark size={100} motion="orbit" />
+      </div>
+      <p class="o4s-cine-kicker mb-6">
+        <span class="o4s-i18n-en">{t.en.cta_type}</span>
+        <span class="o4s-i18n-zh">{t.zh.cta_type}</span>
+      </p>
+      <h2 class="o4s-cine-title text-3xl md:text-5xl">
+        <span class="o4s-i18n-en block">{t.en.cta_title_a}</span>
+        <span class="o4s-i18n-zh block">{t.zh.cta_title_a}</span>
+        <span class="o4s-gradient-text">
+          <span class="o4s-i18n-en">{t.en.cta_title_b}</span>
+          <span class="o4s-i18n-zh">{t.zh.cta_title_b}</span>
+        </span>
+      </h2>
+      <div class="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
+        <a href={GITHUB} target="_blank" rel="noopener" class="btn-primary inline-flex items-center justify-center gap-2">
+          <Icon name="tabler:star" class="w-5 h-5" />
+          <span class="o4s-i18n-en">{t.en.hero_cta_star}</span>
+          <span class="o4s-i18n-zh">{t.zh.hero_cta_star}</span>
+        </a>
+        <a href={ARCH} target="_blank" rel="noopener" class="btn-ghost">
+          <span class="o4s-i18n-en">{t.en.cta_arch}</span>
+          <span class="o4s-i18n-zh">{t.zh.cta_arch}</span>
+        </a>
+      </div>
+      <p class="mt-12 font-mono text-[0.65rem] tracking-[0.28em] uppercase text-muted">
+        <span class="o4s-i18n-en">{t.en.cta_foot}</span>
+        <span class="o4s-i18n-zh">{t.zh.cta_foot}</span>
       </p>
     </div>
   </section>
 </Layout>
 
 <script>
-  // Lazy-load + autoplay demo videos on scroll; pause offscreen.
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const vids = document.querySelectorAll<HTMLVideoElement>('video[data-src]');
   if (!reduce && 'IntersectionObserver' in window) {
@@ -562,6 +649,12 @@ const hostChips = [
       (entries) => {
         entries.forEach((e) => {
           const v = e.target as HTMLVideoElement;
+          // only play visible language's videos
+          const hidden = v.closest('.o4s-i18n-en, .o4s-i18n-zh');
+          if (hidden && getComputedStyle(hidden).display === 'none') {
+            v.pause();
+            return;
+          }
           if (e.isIntersecting) {
             if (!v.src) v.src = v.dataset.src || '';
             v.play().catch(() => {});
@@ -575,7 +668,6 @@ const hostChips = [
     vids.forEach((v) => io.observe(v));
   }
 
-  // Activate a demo (mouse or keyboard) to expand fullscreen with controls.
   const demoVids = document.querySelectorAll<HTMLVideoElement>('[data-demo] video');
   const expand = (v: HTMLVideoElement) => {
     if (!v.src) v.src = v.dataset.src || '';
@@ -593,12 +685,10 @@ const hostChips = [
       }
     });
   });
-  // Single document-level listener clears controls on all demos when leaving fullscreen.
   document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement) demoVids.forEach((v) => (v.controls = false));
   });
 
-  // Copy buttons — guard insecure contexts, catch failures, avoid re-entry label bug.
   document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) => {
     if (!btn.dataset.label) btn.dataset.label = btn.textContent || '';
     btn.addEventListener('click', async () => {

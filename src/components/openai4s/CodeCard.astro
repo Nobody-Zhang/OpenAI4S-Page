@@ -3,35 +3,288 @@ interface Props {
   label?: string;
   live?: string | false;
   dots?: boolean;
+  accent?: 'cyan' | 'violet' | 'amber';
   class?: string;
 }
-const { label = 'kernel · python3', live = 'alive', dots = false, class: className = '' } = Astro.props;
+const {
+  label = 'kernel · python3',
+  live = 'alive',
+  dots = false,
+  accent = 'cyan',
+  class: className = '',
+} = Astro.props;
 ---
 
-<div class:list={['nb-card', className]}>
-  <div class="nb-head">
-    <span class="inline-flex items-center gap-2 truncate">
+<div class:list={['nb-card o4s-code-shell o4s-console', `o4s-console--${accent}`, className]}>
+  <span class="o4s-console__corner o4s-console__corner--tl" aria-hidden="true"></span>
+  <span class="o4s-console__corner o4s-console__corner--tr" aria-hidden="true"></span>
+  <span class="o4s-console__corner o4s-console__corner--bl" aria-hidden="true"></span>
+  <span class="o4s-console__corner o4s-console__corner--br" aria-hidden="true"></span>
+  <span class="o4s-console__chrome" aria-hidden="true"></span>
+
+  <div class="nb-head o4s-console__head">
+    <span class="inline-flex items-center gap-2 truncate min-w-0">
       {
         dots && (
-          <span class="nb-dots">
-            <>
-              <i />
-              <i />
-              <i />
-            </>
+          <span class="nb-dots o4s-console__dots" aria-hidden="true">
+            <i />
+            <i />
+            <i />
           </span>
         )
       }
-      <span class="truncate">{label}</span>
+      <span class="o4s-console__label truncate">{label}</span>
     </span>
     {
       live && (
-        <span class="nb-live">
-          <span class="nb-led" />
-          {live}
+        <span class="nb-live o4s-console__live">
+          <span class="nb-led o4s-console__led" aria-hidden="true" />
+          <span class="o4s-console__live-text">{live}</span>
         </span>
       )
     }
   </div>
-  <div class="nb-body"><slot /></div>
+
+  <div class="nb-body o4s-code-scan o4s-console__body">
+    <span class="o4s-console__scanlines" aria-hidden="true"></span>
+    <span class="o4s-console__vignette" aria-hidden="true"></span>
+    <div class="o4s-console__content">
+      <slot />
+    </div>
+  </div>
 </div>
+
+<style>
+  .o4s-console {
+    --console-accent: var(--o4s-cyan);
+    --console-accent-soft: color-mix(in srgb, var(--console-accent) 14%, transparent);
+    --console-accent-mid: color-mix(in srgb, var(--console-accent) 40%, transparent);
+    --console-accent-glow: color-mix(in srgb, var(--console-accent) 55%, transparent);
+    isolation: isolate;
+  }
+
+  .o4s-console--cyan {
+    --console-accent: var(--o4s-cyan);
+  }
+  .o4s-console--violet {
+    --console-accent: var(--o4s-violet);
+  }
+  .o4s-console--amber {
+    --console-accent: var(--o4s-amber);
+  }
+
+  /* Accent-tinted shell over global nb-card chrome */
+  .o4s-console.nb-card {
+    border-color: color-mix(in srgb, var(--console-accent) 28%, var(--o4s-border));
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--console-accent) 10%, transparent),
+      0 1px 0 rgb(255 255 255 / 5%) inset,
+      0 24px 64px -28px rgb(0 0 0 / 55%),
+      0 0 48px -18px var(--console-accent-glow);
+  }
+
+  .o4s-console.nb-card:hover {
+    border-color: color-mix(in srgb, var(--console-accent) 50%, var(--o4s-border));
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--console-accent) 20%, transparent),
+      0 1px 0 rgb(255 255 255 / 6%) inset,
+      0 28px 72px -24px rgb(0 0 0 / 60%),
+      0 0 64px -10px var(--console-accent-glow);
+  }
+
+  .o4s-console.nb-card::before {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--console-accent) 75%, white) 35%,
+      color-mix(in srgb, var(--console-accent) 45%, white) 65%,
+      transparent 100%
+    );
+    opacity: 0.85;
+  }
+
+  /* Hairline chrome rail along top edge */
+  .o4s-console__chrome {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    z-index: 3;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--console-accent) 55%, white) 18%,
+      color-mix(in srgb, var(--console-accent) 90%, white) 50%,
+      color-mix(in srgb, var(--console-accent) 55%, white) 82%,
+      transparent 100%
+    );
+    opacity: 0.55;
+    box-shadow: 0 0 12px -2px var(--console-accent-glow);
+  }
+
+  /* Sci-fi corner brackets */
+  .o4s-console__corner {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    z-index: 4;
+    pointer-events: none;
+    border-color: color-mix(in srgb, var(--console-accent) 75%, white);
+    border-style: solid;
+    opacity: 0.7;
+    transition: opacity 0.25s ease;
+  }
+  .o4s-console:hover .o4s-console__corner {
+    opacity: 1;
+  }
+  .o4s-console__corner--tl {
+    top: 6px;
+    left: 6px;
+    border-width: 1.5px 0 0 1.5px;
+    border-top-left-radius: 2px;
+  }
+  .o4s-console__corner--tr {
+    top: 6px;
+    right: 6px;
+    border-width: 1.5px 1.5px 0 0;
+    border-top-right-radius: 2px;
+  }
+  .o4s-console__corner--bl {
+    bottom: 6px;
+    left: 6px;
+    border-width: 0 0 1.5px 1.5px;
+    border-bottom-left-radius: 2px;
+  }
+  .o4s-console__corner--br {
+    bottom: 6px;
+    right: 6px;
+    border-width: 0 1.5px 1.5px 0;
+    border-bottom-right-radius: 2px;
+  }
+
+  /* Title bar */
+  .o4s-console__head {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--console-accent) 10%, var(--o4s-head-bg)) 0%,
+        var(--o4s-head-bg) 100%
+      );
+    border-bottom-color: color-mix(in srgb, var(--console-accent) 18%, var(--o4s-border));
+  }
+
+  .o4s-console__label {
+    color: color-mix(in srgb, var(--console-accent) 35%, var(--aw-color-text-muted));
+    letter-spacing: 0.05em;
+  }
+
+  .o4s-console__dots i {
+    box-shadow:
+      0 0 6px currentColor,
+      0 0 1px rgb(255 255 255 / 40%) inset;
+  }
+
+  /* Status LED cluster */
+  .o4s-console__live {
+    color: var(--console-accent);
+    flex-shrink: 0;
+    gap: 0.45rem;
+    padding: 0.15rem 0.45rem 0.15rem 0.35rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--console-accent) 28%, transparent);
+    background: color-mix(in srgb, var(--console-accent) 8%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--console-accent) 6%, transparent);
+  }
+
+  .o4s-console__led {
+    background: var(--console-accent);
+    box-shadow:
+      0 0 0 0 var(--console-accent-glow),
+      0 0 8px var(--console-accent);
+    animation: o4s-console-led 2s ease-in-out infinite;
+  }
+
+  .o4s-console__live-text {
+    font-variant-numeric: tabular-nums;
+  }
+
+  @keyframes o4s-console-led {
+    0% {
+      box-shadow:
+        0 0 0 0 var(--console-accent-glow),
+        0 0 8px var(--console-accent);
+      opacity: 1;
+    }
+    70% {
+      box-shadow:
+        0 0 0 0.55rem color-mix(in srgb, var(--console-accent) 0%, transparent),
+        0 0 6px var(--console-accent);
+      opacity: 0.85;
+    }
+    100% {
+      box-shadow:
+        0 0 0 0 color-mix(in srgb, var(--console-accent) 0%, transparent),
+        0 0 8px var(--console-accent);
+      opacity: 1;
+    }
+  }
+
+  /* Body: CRT scanlines + soft vignette (content stays interactive) */
+  .o4s-console__body {
+    position: relative;
+  }
+
+  .o4s-console__scanlines,
+  .o4s-console__vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .o4s-console__scanlines {
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      color-mix(in srgb, var(--console-accent) 4.5%, transparent) 2px,
+      color-mix(in srgb, var(--console-accent) 4.5%, transparent) 3px
+    );
+    opacity: 0.55;
+    mix-blend-mode: soft-light;
+  }
+
+  .o4s-console__vignette {
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 40%, transparent 45%, color-mix(in srgb, var(--console-accent) 6%, transparent) 100%),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--console-accent) 5%, transparent) 0%,
+        transparent 18%,
+        transparent 82%,
+        color-mix(in srgb, var(--console-accent) 7%, transparent) 100%
+      );
+    opacity: 0.9;
+  }
+
+  .o4s-console__content {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Tint the global sweep to the console accent */
+  .o4s-console .o4s-code-scan::after {
+    background: linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--console-accent) 14%, transparent),
+      transparent
+    );
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .o4s-console__led {
+      animation: none;
+    }
+  }
+</style>

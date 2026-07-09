@@ -1,0 +1,103 @@
+---
+/**
+ * EN | 中文 language toggle.
+ * Sets html[data-lang], localStorage, and dispatches o4s:lang.
+ */
+---
+
+<div class="o4s-lang" role="group" aria-label="Language">
+  <button type="button" class="o4s-lang__btn" data-lang-set="en" aria-pressed="true">EN</button>
+  <span class="o4s-lang__div" aria-hidden="true">/</span>
+  <button type="button" class="o4s-lang__btn" data-lang-set="zh" aria-pressed="false">中文</button>
+</div>
+
+<script>
+  const KEY = 'o4s-lang';
+
+  const detect = (): 'en' | 'zh' => {
+    try {
+      const saved = localStorage.getItem(KEY);
+      if (saved === 'en' || saved === 'zh') return saved;
+    } catch {
+      /* ignore */
+    }
+    if (typeof navigator !== 'undefined' && /^zh\b/i.test(navigator.language || '')) return 'zh';
+    return 'en';
+  };
+
+  const apply = (lang: 'en' | 'zh') => {
+    document.documentElement.setAttribute('data-lang', lang);
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    try {
+      localStorage.setItem(KEY, lang);
+    } catch {
+      /* ignore */
+    }
+    document.querySelectorAll<HTMLButtonElement>('[data-lang-set]').forEach((btn) => {
+      const on = btn.dataset.langSet === lang;
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btn.classList.toggle('is-active', on);
+    });
+    document.dispatchEvent(new CustomEvent('o4s:lang', { detail: { lang } }));
+  };
+
+  const boot = () => {
+    apply(detect());
+    document.querySelectorAll<HTMLButtonElement>('[data-lang-set]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const lang = btn.dataset.langSet === 'zh' ? 'zh' : 'en';
+        apply(lang);
+      });
+    });
+  };
+
+  boot();
+  document.addEventListener('astro:page-load', boot);
+</script>
+
+<style>
+  .o4s-lang {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.35rem;
+    border-radius: 0.4rem;
+    border: 1px solid color-mix(in srgb, var(--o4s-amber) 28%, var(--o4s-border));
+    background: color-mix(in srgb, var(--aw-color-bg-page) 55%, transparent);
+    backdrop-filter: blur(10px);
+  }
+  .o4s-lang__div {
+    color: var(--aw-color-text-muted);
+    opacity: 0.5;
+    user-select: none;
+  }
+  .o4s-lang__btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--aw-color-text-muted);
+    cursor: pointer;
+    padding: 0.28rem 0.45rem;
+    border-radius: 0.28rem;
+    transition:
+      color 0.2s ease,
+      background 0.2s ease,
+      text-shadow 0.2s ease;
+    line-height: 1;
+  }
+  .o4s-lang__btn:hover,
+  .o4s-lang__btn:focus-visible {
+    color: var(--aw-color-text-heading);
+    outline: none;
+  }
+  .o4s-lang__btn.is-active,
+  .o4s-lang__btn[aria-pressed='true'] {
+    color: var(--o4s-amber);
+    background: color-mix(in srgb, var(--o4s-amber) 12%, transparent);
+    text-shadow: 0 0 14px color-mix(in srgb, var(--o4s-amber) 45%, transparent);
+  }
+</style>

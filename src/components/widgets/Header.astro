@@ -3,6 +3,7 @@ import { Icon } from 'astro-icon/components';
 import Logo from '~/components/Logo.astro';
 import ToggleTheme from '~/components/common/ToggleTheme.astro';
 import ToggleMenu from '~/components/common/ToggleMenu.astro';
+import LanguageToggle from '~/components/common/LanguageToggle.astro';
 import Button from '~/components/ui/Button.astro';
 
 import { getHomePermalink } from '~/utils/permalinks';
@@ -11,6 +12,7 @@ import type { CallToAction } from '~/types';
 
 interface Link {
   text?: string;
+  textZh?: string;
   href?: string;
   ariaLabel?: string;
   icon?: string;
@@ -50,15 +52,15 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
 <header
   class:list={[
     { sticky: isSticky, relative: !isSticky, dark: isDark },
-    'top-0 z-40 flex-none mx-auto w-full border-b border-gray-50/0 transition-[opacity] ease-in-out',
+    'o4s-header top-0 z-40 flex-none mx-auto w-full border-b border-transparent transition-[border-color,box-shadow,background] duration-300 ease-out',
   ]}
   {...isSticky ? { 'data-aw-sticky-header': true } : {}}
   {...id ? { id } : {}}
 >
-  <div class="absolute inset-0"></div>
+  <div class="o4s-header-glass absolute inset-0"></div>
   <div
     class:list={[
-      'relative text-default py-3 px-3 md:px-6 mx-auto w-full',
+      'relative text-default py-2.5 px-3 md:px-6 mx-auto w-full',
       {
         'md:flex md:justify-between': position !== 'center',
       },
@@ -70,8 +72,8 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
       },
     ]}
   >
-    <div class:list={[{ 'mr-auto rtl:mr-0 rtl:ml-auto': position === 'right' }, 'flex justify-between']}>
-      <a class="flex items-center" href={getHomePermalink()}>
+    <div class:list={[{ 'mr-auto rtl:mr-0 rtl:ml-auto': position === 'right' }, 'flex justify-between min-w-0']}>
+      <a class="flex items-center min-w-0" href={getHomePermalink()} aria-label="OpenAI4S home">
         <Logo />
       </a>
       <div class="flex items-center md:hidden">
@@ -79,26 +81,24 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
       </div>
     </div>
     <nav
-      class="items-center w-full md:w-auto hidden md:flex md:mx-5 text-default overflow-y-auto overflow-x-hidden md:overflow-visible md:justify-self-center"
+      class="o4s-header-nav items-center w-full md:w-auto hidden md:flex md:mx-4 text-default overflow-y-auto overflow-x-hidden md:overflow-visible md:justify-self-center"
       aria-label="Main navigation"
     >
       <ul
-        class="flex flex-col md:flex-row md:self-center w-full md:w-auto text-xl md:text-[0.9375rem] tracking-[0.01rem] font-medium md:justify-center"
+        class="flex flex-col md:flex-row md:self-center w-full md:w-auto text-xl md:text-[0.8125rem] tracking-[0.04em] font-medium md:justify-center md:font-mono md:uppercase"
       >
         {
-          links.map(({ text, href, links }) => (
+          links.map(({ text, textZh, href, links }) => (
             <li class={links?.length ? 'dropdown' : ''}>
               {links?.length ? (
                 <>
-                  <button
-                    type="button"
-                    class="hover:text-link dark:hover:text-white px-4 py-3 flex items-center whitespace-nowrap"
-                  >
-                    {text}{' '}
+                  <button type="button" class="o4s-nav-link px-3.5 py-2.5 flex items-center whitespace-nowrap">
+                    <span class="o4s-i18n-en">{text}</span>
+                    <span class="o4s-i18n-zh">{textZh || text}</span>{' '}
                     <Icon name="tabler:chevron-down" class="w-3.5 h-3.5 ml-0.5 rtl:ml-0 rtl:mr-0.5 hidden md:inline" />
                   </button>
                   <ul class="dropdown-menu md:backdrop-blur-md dark:md:bg-dark rounded md:absolute pl-4 md:pl-0 md:hidden font-medium md:bg-white/90 md:min-w-[200px] drop-shadow-xl">
-                    {links.map(({ text: text2, href: href2 }) => (
+                    {links.map(({ text: text2, textZh: textZh2, href: href2 }) => (
                       <li>
                         <a
                           class:list={[
@@ -107,7 +107,8 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
                           ]}
                           href={href2}
                         >
-                          {text2}
+                          <span class="o4s-i18n-en">{text2}</span>
+                          <span class="o4s-i18n-zh">{textZh2 || text2}</span>
                         </a>
                       </li>
                     ))}
@@ -115,13 +116,11 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
                 </>
               ) : (
                 <a
-                  class:list={[
-                    'hover:text-link dark:hover:text-white px-4 py-3 flex items-center whitespace-nowrap',
-                    { 'aw-link-active': href === currentPath },
-                  ]}
+                  class:list={['o4s-nav-link px-3.5 py-2.5 flex items-center whitespace-nowrap', { 'aw-link-active': href === currentPath }]}
                   href={href}
                 >
-                  {text}
+                  <span class="o4s-i18n-en">{text}</span>
+                  <span class="o4s-i18n-zh">{textZh || text}</span>
                 </a>
               )}
             </li>
@@ -135,8 +134,9 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
         'hidden md:self-center md:flex items-center md:mb-0 fixed w-full md:w-auto md:static justify-end left-0 rtl:left-auto rtl:right-0 bottom-0 p-3 md:p-0 md:justify-self-end',
       ]}
     >
-      <div class="items-center flex justify-between w-full md:w-auto">
-        <div class="flex">
+      <div class="items-center flex justify-between w-full md:w-auto gap-2">
+        <div class="flex items-center gap-1.5">
+          <LanguageToggle />
           {showToggleTheme && <ToggleTheme iconClass="w-6 h-6 md:w-5 md:h-5 md:inline-block" />}
           {
             showRssFeed && (
@@ -152,9 +152,9 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
         </div>
         {
           actions?.length ? (
-            <span class="ml-4 rtl:ml-0 rtl:mr-4">
+            <span class="ml-3 rtl:ml-0 rtl:mr-3">
               {actions.map((btnProps) => (
-                <Button {...btnProps} class="ml-2 py-2.5 px-5.5 md:px-6 font-semibold shadow-none text-sm w-auto" />
+                <Button {...btnProps} class="ml-2 py-2 px-4 md:px-5 font-semibold shadow-none text-sm w-auto font-mono tracking-wide" />
               ))}
             </span>
           ) : (
@@ -165,3 +165,144 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
     </div>
   </div>
 </header>
+
+<style is:global>
+  /* Mission-control glass bar — enhances scroll state without relying on global file edits */
+  .o4s-header {
+    isolation: isolate;
+  }
+
+  .o4s-header-glass {
+    pointer-events: none;
+    background: transparent;
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+    border-bottom: 1px solid transparent;
+    transition:
+      background 0.3s ease,
+      backdrop-filter 0.3s ease,
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  /* When sticky script adds .scroll, first child is the glass layer */
+  #header.scroll > .o4s-header-glass,
+  #header.scroll > div:first-child {
+    background-color: color-mix(in srgb, var(--aw-color-bg-page) 72%, transparent) !important;
+    backdrop-filter: blur(18px) saturate(1.35) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.35) !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--o4s-cyan) 38%, transparent) !important;
+    box-shadow:
+      0 1px 0 color-mix(in srgb, var(--o4s-cyan) 22%, transparent),
+      0 0 24px -8px var(--o4s-glow-strong),
+      0 12px 40px -20px rgb(0 0 0 / 45%) !important;
+  }
+
+  @media (min-width: 768px) {
+    #header.scroll > .o4s-header-glass,
+    #header.scroll > div:first-child {
+      background-color: color-mix(in srgb, var(--aw-color-bg-page) 68%, transparent) !important;
+    }
+  }
+
+  .dark #header.scroll > .o4s-header-glass,
+  .dark #header.scroll > div:first-child,
+  #header.scroll.dark > .o4s-header-glass,
+  #header.scroll.dark > div:first-child {
+    background: color-mix(in srgb, var(--aw-color-bg-page) 62%, transparent) !important;
+    border-bottom-color: color-mix(in srgb, var(--o4s-cyan) 42%, transparent) !important;
+    box-shadow:
+      0 1px 0 color-mix(in srgb, var(--o4s-cyan) 28%, transparent),
+      0 0 32px -10px var(--o4s-glow-strong),
+      0 16px 48px -24px rgb(0 0 0 / 70%) !important;
+  }
+
+  /* Subtle cyan hairline always present for HUD frame */
+  .o4s-header::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--o4s-cyan) 35%, transparent) 20%,
+      color-mix(in srgb, var(--o4s-violet) 28%, transparent) 50%,
+      color-mix(in srgb, var(--o4s-cyan) 35%, transparent) 80%,
+      transparent 100%
+    );
+    opacity: 0.55;
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.3s ease;
+  }
+
+  #header.scroll::after {
+    opacity: 1;
+    height: 1px;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--o4s-cyan) 55%, transparent);
+  }
+
+  /* Nav link underline glow */
+  .o4s-nav-link {
+    position: relative;
+    color: inherit;
+    transition: color 0.2s ease;
+  }
+
+  .o4s-nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0.85rem;
+    right: 0.85rem;
+    bottom: 0.45rem;
+    height: 1.5px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--o4s-cyan) 25%,
+      var(--o4s-neon, var(--o4s-cyan)) 50%,
+      var(--o4s-cyan) 75%,
+      transparent
+    );
+    transform: scaleX(0);
+    transform-origin: center;
+    opacity: 0;
+    transition:
+      transform 0.25s ease,
+      opacity 0.25s ease,
+      box-shadow 0.25s ease;
+    box-shadow: none;
+  }
+
+  .o4s-nav-link:hover,
+  .o4s-nav-link:focus-visible {
+    color: var(--aw-color-primary);
+  }
+
+  .o4s-nav-link:hover::after,
+  .o4s-nav-link:focus-visible::after,
+  .o4s-nav-link.aw-link-active::after {
+    transform: scaleX(1);
+    opacity: 1;
+    box-shadow:
+      0 0 8px color-mix(in srgb, var(--o4s-cyan) 70%, transparent),
+      0 0 16px color-mix(in srgb, var(--o4s-cyan) 40%, transparent);
+  }
+
+  .o4s-nav-link.aw-link-active {
+    color: var(--aw-color-primary);
+  }
+
+  @media (max-width: 767px) {
+    .o4s-nav-link::after {
+      left: 1rem;
+      right: auto;
+      width: 1.25rem;
+      bottom: 0.55rem;
+    }
+  }
+</style>

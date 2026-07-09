@@ -1,0 +1,517 @@
+---
+/**
+ * ReAct vs Code-as-Action comparison.
+ * Desktop: 3-col table (aspect | muted old | glowing new).
+ * Mobile: stacked per-aspect cards.
+ *
+ * `a` / `r` / `c` may contain trusted HTML (e.g. <strong>, <code>) — rendered via set:html.
+ */
+export interface ParadigmRow {
+  /** Aspect / row label */
+  a: string;
+  /** ReAct (old) value */
+  r: string;
+  /** Code-as-Action (new) value */
+  c: string;
+}
+
+interface Props {
+  rows: ParadigmRow[];
+  /** Column title for the muted "old" side */
+  oldTitle?: string;
+  /** Column title for the glowing "new" side */
+  newTitle?: string;
+  class?: string;
+}
+
+const {
+  rows,
+  oldTitle = 'ReAct + tool_use',
+  newTitle = 'Code-as-Action',
+  class: className = '',
+} = Astro.props;
+---
+
+<div class:list={['o4s-pc', className]}>
+  <!-- ========== Desktop / tablet table ========== -->
+  <div class="o4s-pc__table" role="table" aria-label="ReAct versus Code-as-Action">
+    <div class="o4s-pc__thead" role="rowgroup">
+      <div class="o4s-pc__tr o4s-pc__tr--head" role="row">
+        <div class="o4s-pc__th o4s-pc__th--label" role="columnheader">
+          <span class="o4s-pc__axis">aspect</span>
+        </div>
+        <div class="o4s-pc__th o4s-pc__th--old" role="columnheader">
+          <span class="o4s-pc__col-tag o4s-pc__col-tag--old">legacy</span>
+          <span class="o4s-pc__col-title o4s-pc__col-title--old">{oldTitle}</span>
+        </div>
+        <div class="o4s-pc__th o4s-pc__th--new" role="columnheader">
+          <span class="o4s-pc__col-tag o4s-pc__col-tag--new">
+            <span class="o4s-pc__led" aria-hidden="true"></span>
+            preferred
+          </span>
+          <span class="o4s-pc__col-title o4s-pc__col-title--new">{newTitle}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="o4s-pc__tbody" role="rowgroup">
+      {
+        rows.map((row, i) => (
+          <div
+            class="o4s-pc__tr o4s-pc__tr--body intersect-once motion-safe:md:opacity-0 motion-safe:md:intersect:animate-fade"
+            role="row"
+            style={`--i: ${i}`}
+          >
+            <div class="o4s-pc__td o4s-pc__td--label" role="rowheader" set:html={row.a} />
+            <div class="o4s-pc__td o4s-pc__td--old" role="cell" set:html={row.r} />
+            <div class="o4s-pc__td o4s-pc__td--new" role="cell" set:html={row.c} />
+          </div>
+        ))
+      }
+    </div>
+  </div>
+
+  <!-- ========== Mobile stacked cards ========== -->
+  <div class="o4s-pc__cards" aria-label="ReAct versus Code-as-Action">
+    {
+      rows.map((row, i) => (
+        <article
+          class="o4s-pc__card intersect-once motion-safe:opacity-0 motion-safe:intersect:animate-fade"
+          style={`--i: ${i}`}
+        >
+          <header class="o4s-pc__card-head">
+            <span class="o4s-pc__card-index" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <h3 class="o4s-pc__card-title" set:html={row.a} />
+          </header>
+
+          <div class="o4s-pc__card-body">
+            <div class="o4s-pc__pane o4s-pc__pane--old">
+              <div class="o4s-pc__pane-label">
+                <span class="o4s-pc__col-tag o4s-pc__col-tag--old">legacy</span>
+                <span class="o4s-pc__pane-name o4s-pc__pane-name--old">{oldTitle}</span>
+              </div>
+              <div class="o4s-pc__pane-value o4s-pc__pane-value--old" set:html={row.r} />
+            </div>
+
+            <div class="o4s-pc__vs" aria-hidden="true">
+              <span>vs</span>
+            </div>
+
+            <div class="o4s-pc__pane o4s-pc__pane--new">
+              <div class="o4s-pc__pane-label">
+                <span class="o4s-pc__col-tag o4s-pc__col-tag--new">
+                  <span class="o4s-pc__led" aria-hidden="true"></span>
+                  preferred
+                </span>
+                <span class="o4s-pc__pane-name o4s-pc__pane-name--new">{newTitle}</span>
+              </div>
+              <div class="o4s-pc__pane-value o4s-pc__pane-value--new" set:html={row.c} />
+            </div>
+          </div>
+        </article>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .o4s-pc {
+    --pc-radius: 1rem;
+    --pc-border: color-mix(in srgb, var(--o4s-cyan) 18%, var(--o4s-border));
+    --pc-border-soft: color-mix(in srgb, var(--o4s-cyan) 10%, var(--o4s-border));
+    --pc-old-fg: var(--aw-color-text-muted);
+    --pc-new-fg: var(--aw-color-text-heading);
+    --pc-new-accent: var(--o4s-cyan);
+    width: 100%;
+    max-width: 64rem;
+    margin-inline: auto;
+  }
+
+  /* ---- Desktop table (md+) ---- */
+  .o4s-pc__table {
+    display: none;
+    border: 1px solid var(--pc-border);
+    border-radius: var(--pc-radius);
+    overflow: hidden;
+    background: var(--o4s-surface-solid);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--o4s-cyan) 6%, transparent),
+      0 24px 48px -28px rgb(0 0 0 / 45%),
+      0 0 60px -28px var(--o4s-glow-strong);
+  }
+
+  .o4s-pc__tr {
+    display: grid;
+    grid-template-columns: minmax(7.5rem, 0.72fr) 1fr 1fr;
+  }
+
+  .o4s-pc__tr--head {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--o4s-cyan) 6%, var(--o4s-head-bg)) 0%, var(--o4s-head-bg) 100%);
+    border-bottom: 1px solid var(--pc-border-soft);
+  }
+
+  .o4s-pc__tr--body {
+    border-top: 1px solid var(--pc-border-soft);
+    transition: background 0.2s ease;
+  }
+
+  .o4s-pc__tr--body:first-child {
+    border-top: 0;
+  }
+
+  .o4s-pc__tr--body:hover {
+    background: color-mix(in srgb, var(--o4s-cyan) 4%, transparent);
+  }
+
+  .o4s-pc__th,
+  .o4s-pc__td {
+    padding: 0.9rem 1.15rem;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    min-width: 0;
+  }
+
+  .o4s-pc__th {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    justify-content: center;
+  }
+
+  .o4s-pc__th--old,
+  .o4s-pc__td--old {
+    border-left: 1px solid var(--pc-border-soft);
+  }
+
+  .o4s-pc__th--new,
+  .o4s-pc__td--new {
+    border-left: 1px solid color-mix(in srgb, var(--o4s-cyan) 22%, var(--o4s-border));
+    position: relative;
+  }
+
+  /* Glowing "new" column wash */
+  .o4s-pc__th--new,
+  .o4s-pc__td--new {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--o4s-cyan) 12%, transparent),
+      color-mix(in srgb, var(--o4s-cyan) 5%, transparent) 55%,
+      color-mix(in srgb, var(--o4s-violet) 6%, transparent)
+    );
+  }
+
+  .o4s-pc__th--new::before,
+  .o4s-pc__td--new::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 2px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--o4s-cyan) 80%, white),
+      var(--o4s-violet),
+      color-mix(in srgb, var(--o4s-neon) 70%, var(--o4s-cyan))
+    );
+    box-shadow: 0 0 12px var(--o4s-glow-strong);
+    opacity: 0.9;
+    pointer-events: none;
+  }
+
+  .o4s-pc__axis {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--aw-color-text-muted);
+    opacity: 0.75;
+  }
+
+  .o4s-pc__col-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: fit-content;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.18rem 0.5rem;
+    border-radius: 9999px;
+    line-height: 1.2;
+  }
+
+  .o4s-pc__col-tag--old {
+    color: var(--aw-color-text-muted);
+    border: 1px solid color-mix(in srgb, var(--o4s-border) 80%, transparent);
+    background: color-mix(in srgb, var(--aw-color-bg-page-alt) 70%, transparent);
+  }
+
+  .o4s-pc__col-tag--new {
+    color: var(--o4s-cyan);
+    border: 1px solid color-mix(in srgb, var(--o4s-cyan) 40%, var(--o4s-border));
+    background: color-mix(in srgb, var(--o4s-cyan) 12%, transparent);
+    box-shadow: 0 0 16px -8px var(--o4s-glow-strong);
+  }
+
+  .o4s-pc__col-title {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .o4s-pc__col-title--old {
+    color: var(--aw-color-text-muted);
+  }
+
+  .o4s-pc__col-title--new {
+    color: var(--aw-color-primary);
+    text-shadow: 0 0 20px var(--o4s-glow-strong);
+  }
+
+  .o4s-pc__td--label {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--aw-color-text-muted);
+    display: flex;
+    align-items: center;
+  }
+
+  .o4s-pc__td--old {
+    color: var(--pc-old-fg);
+  }
+
+  .o4s-pc__td--new {
+    color: var(--pc-new-fg);
+  }
+
+  .o4s-pc__td--new :global(strong) {
+    color: var(--aw-color-primary);
+    font-weight: 600;
+    text-shadow: 0 0 18px var(--o4s-glow-strong);
+  }
+
+  .o4s-pc__td--old :global(strong) {
+    color: var(--aw-color-text-muted);
+    font-weight: 600;
+  }
+
+  .o4s-pc__td :global(code),
+  .o4s-pc__pane-value :global(code) {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.82em;
+    padding: 0.08rem 0.35rem;
+    border-radius: 0.3rem;
+    border: 1px solid color-mix(in srgb, var(--o4s-cyan) 28%, var(--o4s-border));
+    background: color-mix(in srgb, var(--o4s-cyan) 8%, transparent);
+    color: var(--o4s-chip-fg);
+  }
+
+  .o4s-pc__td--old :global(code) {
+    border-color: color-mix(in srgb, var(--o4s-border) 90%, transparent);
+    background: color-mix(in srgb, var(--aw-color-bg-page-alt) 80%, transparent);
+    color: var(--aw-color-text-muted);
+  }
+
+  .o4s-pc__led {
+    width: 0.38rem;
+    height: 0.38rem;
+    border-radius: 9999px;
+    background: var(--o4s-neon);
+    box-shadow: 0 0 8px var(--o4s-neon);
+    animation: o4s-pc-pulse 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  /* ---- Mobile cards ---- */
+  .o4s-pc__cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .o4s-pc__card {
+    border: 1px solid var(--pc-border);
+    border-radius: var(--pc-radius);
+    overflow: hidden;
+    background: var(--o4s-surface-solid);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--o4s-cyan) 5%, transparent),
+      0 16px 36px -24px rgb(0 0 0 / 40%);
+  }
+
+  .o4s-pc__card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--pc-border-soft);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--o4s-cyan) 7%, var(--o4s-head-bg)) 0%, var(--o4s-head-bg) 100%);
+  }
+
+  .o4s-pc__card-index {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: var(--o4s-cyan);
+    opacity: 0.75;
+    min-width: 1.4rem;
+  }
+
+  .o4s-pc__card-title {
+    margin: 0;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--aw-color-text-heading);
+    line-height: 1.35;
+  }
+
+  .o4s-pc__card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .o4s-pc__pane {
+    padding: 0.85rem 1rem 1rem;
+  }
+
+  .o4s-pc__pane--old {
+    background: color-mix(in srgb, var(--aw-color-bg-page-alt) 55%, transparent);
+    border-bottom: 1px dashed color-mix(in srgb, var(--o4s-border) 85%, transparent);
+  }
+
+  .o4s-pc__pane--new {
+    position: relative;
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--o4s-cyan) 12%, transparent),
+      color-mix(in srgb, var(--o4s-violet) 7%, transparent) 70%,
+      transparent
+    );
+    box-shadow: inset 0 0 40px -18px var(--o4s-glow-strong);
+  }
+
+  .o4s-pc__pane--new::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 2px;
+    background: linear-gradient(
+      180deg,
+      var(--o4s-cyan),
+      var(--o4s-violet),
+      var(--o4s-neon)
+    );
+    box-shadow: 0 0 12px var(--o4s-glow-strong);
+  }
+
+  .o4s-pc__pane-label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.6rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .o4s-pc__pane-name {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .o4s-pc__pane-name--old {
+    color: var(--aw-color-text-muted);
+  }
+
+  .o4s-pc__pane-name--new {
+    color: var(--aw-color-primary);
+    text-shadow: 0 0 16px var(--o4s-glow-strong);
+  }
+
+  .o4s-pc__pane-value {
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  .o4s-pc__pane-value--old {
+    color: var(--pc-old-fg);
+  }
+
+  .o4s-pc__pane-value--new {
+    color: var(--pc-new-fg);
+  }
+
+  .o4s-pc__pane-value--new :global(strong) {
+    color: var(--aw-color-primary);
+    font-weight: 600;
+    text-shadow: 0 0 18px var(--o4s-glow-strong);
+  }
+
+  .o4s-pc__vs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-block: -0.55rem;
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .o4s-pc__vs span {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--aw-color-text-muted);
+    padding: 0.18rem 0.55rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--o4s-cyan) 22%, var(--o4s-border));
+    background: var(--o4s-surface-solid);
+    box-shadow: 0 4px 14px -8px rgb(0 0 0 / 40%);
+  }
+
+  /* Staggered fade via --i when intersect anim runs */
+  .o4s-pc__tr--body,
+  .o4s-pc__card {
+    animation-delay: calc(var(--i, 0) * 45ms);
+  }
+
+  @keyframes o4s-pc-pulse {
+    0%,
+    100% {
+      opacity: 0.7;
+      box-shadow: 0 0 6px var(--o4s-neon);
+    }
+    50% {
+      opacity: 1;
+      box-shadow: 0 0 12px var(--o4s-neon);
+    }
+  }
+
+  @media (min-width: 768px) {
+    .o4s-pc__table {
+      display: block;
+    }
+    .o4s-pc__cards {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .o4s-pc__led {
+      animation: none;
+    }
+    .o4s-pc__tr--body,
+    .o4s-pc__card {
+      animation-delay: 0ms;
+    }
+  }
+</style>

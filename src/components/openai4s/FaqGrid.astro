@@ -1,0 +1,86 @@
+---
+import { Icon } from 'astro-icon/components';
+
+export interface FaqItem {
+  title: string;
+  description: string;
+  icon: string;
+}
+
+interface Props {
+  items: FaqItem[];
+  class?: string;
+}
+
+const { items = [], class: className = '' } = Astro.props;
+---
+
+{
+  items.length > 0 && (
+    <div class:list={['grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5', className]}>
+      {items.map((item) => (
+        <article class="o4s-faq-item o4s-faq-panel intersect-once motion-safe:md:opacity-0 motion-safe:md:intersect:animate-fade">
+          <div class="flex items-start gap-3">
+            <div class="o4s-feature-icon o4s-faq-panel__icon shrink-0" aria-hidden="true">
+              <Icon name={item.icon} class="w-4 h-4" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <h3 class="text-base md:text-lg font-bold text-gray-900 dark:text-white leading-snug">{item.title}</h3>
+              <p class="mt-2 text-sm text-muted leading-relaxed" set:html={item.description} />
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+<style>
+  .o4s-faq-panel {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .o4s-faq-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--o4s-cyan) 10%, transparent),
+      transparent 42%,
+      color-mix(in srgb, var(--o4s-violet) 8%, transparent)
+    );
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .o4s-faq-panel:hover::before {
+    opacity: 1;
+  }
+
+  .o4s-faq-panel__icon {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    margin-bottom: 0 !important;
+    border-radius: 0.55rem !important;
+    transition:
+      box-shadow 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .o4s-faq-panel:hover .o4s-faq-panel__icon {
+    border-color: color-mix(in srgb, var(--o4s-cyan) 55%, var(--o4s-border));
+    box-shadow: 0 0 22px -6px var(--o4s-glow-strong);
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 639px) {
+    .o4s-faq-panel {
+      padding: 1.1rem 1.15rem;
+    }
+  }
+</style>

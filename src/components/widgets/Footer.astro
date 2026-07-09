@@ -5,6 +5,7 @@ import { getHomePermalink } from '~/utils/permalinks';
 
 interface Link {
   text?: string;
+  textZh?: string;
   href?: string;
   ariaLabel?: string;
   icon?: string;
@@ -12,6 +13,7 @@ interface Link {
 
 interface Links {
   title?: string;
+  titleZh?: string;
   links: Array<Link>;
 }
 
@@ -26,45 +28,55 @@ export interface Props {
 const { socialLinks = [], secondaryLinks = [], links = [], footNote = '', theme = 'light' } = Astro.props;
 ---
 
-<footer class:list={[{ dark: theme === 'dark' }, 'relative border-t border-gray-200 dark:border-slate-800 not-prose']}>
-  <div class="dark:bg-dark absolute inset-0 pointer-events-none" aria-hidden="true"></div>
+<footer
+  class:list={[
+    { dark: theme === 'dark' },
+    'o4s-footer relative border-t border-gray-200 dark:border-slate-800 not-prose overflow-hidden',
+  ]}
+>
+  <!-- Top gradient line: cyan → violet -->
+  <div class="o4s-footer-line" aria-hidden="true"></div>
+
+  <!-- Ambient background layers -->
+  <div class="o4s-footer-bg dark:bg-dark absolute inset-0 pointer-events-none" aria-hidden="true">
+    <div class="o4s-footer-grid"></div>
+    <div class="o4s-footer-noise"></div>
+    <div class="o4s-footer-glow"></div>
+  </div>
+
   <div
     class="relative max-w-7xl mx-auto px-4 sm:px-6 dark:text-slate-300 intersect-once intersect-quarter intersect-no-queue motion-safe:md:opacity-0 motion-safe:md:intersect:animate-fade"
   >
     <div class="grid grid-cols-12 gap-4 gap-y-8 sm:gap-8 py-8 md:py-12">
       <div class="col-span-12 lg:col-span-4">
         <div class="mb-2">
-          <a class="inline-block font-bold text-xl" href={getHomePermalink()}>{SITE?.name}</a>
+          <a class="o4s-footer-brand inline-block font-bold text-xl" href={getHomePermalink()}>{SITE?.name}</a>
         </div>
         <div class="text-sm text-muted flex gap-1">
           {
             secondaryLinks.map(({ text, href }, index) => (
               <>
                 {index !== 0 ? ' · ' : ''}
-                <a
-                  class="text-muted hover:text-gray-700 dark:text-gray-400 hover:underline transition duration-150 ease-in-out"
-                  href={href}
-                  set:html={text}
-                />
+                <a class="o4s-footer-link text-muted dark:text-gray-400" href={href} set:html={text} />
               </>
             ))
           }
         </div>
       </div>
       {
-        links.map(({ title, links }) => (
+        links.map(({ title, titleZh, links }) => (
           <div class="col-span-6 md:col-span-3 lg:col-span-2">
-            <div class="dark:text-gray-300 font-medium mb-2">{title}</div>
+            <div class="o4s-footer-title dark:text-gray-300 font-medium mb-2">
+              <span class="o4s-i18n-en">{title}</span>
+              <span class="o4s-i18n-zh">{titleZh || title}</span>
+            </div>
             {links && Array.isArray(links) && links.length > 0 && (
               <ul class="text-sm">
-                {links.map(({ text, href, ariaLabel }) => (
+                {links.map(({ text, textZh, href, ariaLabel }) => (
                   <li class="mb-2">
-                    <a
-                      class="text-muted hover:text-gray-700 hover:underline dark:text-gray-400 transition duration-150 ease-in-out"
-                      href={href}
-                      aria-label={ariaLabel}
-                    >
-                      <Fragment set:html={text} />
+                    <a class="o4s-footer-link text-muted dark:text-gray-400" href={href} aria-label={ariaLabel}>
+                      <span class="o4s-i18n-en" set:html={text} />
+                      <span class="o4s-i18n-zh" set:html={textZh || text} />
                     </a>
                   </li>
                 ))}
@@ -74,14 +86,14 @@ const { socialLinks = [], secondaryLinks = [], links = [], footNote = '', theme 
         ))
       }
     </div>
-    <div class="md:flex md:items-center md:justify-between py-6 md:py-8">
+    <div class="o4s-footer-bottom md:flex md:items-center md:justify-between py-6 md:py-8">
       {
         socialLinks?.length ? (
           <ul class="flex mb-4 md:order-1 -ml-2 md:ml-4 md:mb-0 rtl:ml-0 rtl:-mr-2 rtl:md:ml-0 rtl:md:mr-4">
             {socialLinks.map(({ ariaLabel, href, text, icon }) => (
               <li>
                 <a
-                  class="text-muted dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5 inline-flex items-center"
+                  class="o4s-footer-social text-muted dark:text-gray-400 focus:outline-none rounded-lg text-sm p-2.5 inline-flex items-center"
                   aria-label={ariaLabel}
                   href={href}
                 >
@@ -96,9 +108,179 @@ const { socialLinks = [], secondaryLinks = [], links = [], footNote = '', theme 
         )
       }
 
-      <div class="text-sm mr-4 dark:text-muted">
+      <div class="o4s-footer-note text-sm mr-4 dark:text-muted">
         <Fragment set:html={footNote} />
       </div>
     </div>
   </div>
 </footer>
+
+<style>
+  /* ---- Top gradient line: cyan → violet ---- */
+  .o4s-footer-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    z-index: 2;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--o4s-cyan) 90%, transparent) 18%,
+      var(--o4s-cyan) 38%,
+      var(--o4s-violet) 62%,
+      color-mix(in srgb, var(--o4s-violet) 90%, transparent) 82%,
+      transparent 100%
+    );
+    box-shadow:
+      0 0 12px color-mix(in srgb, var(--o4s-cyan) 55%, transparent),
+      0 0 28px color-mix(in srgb, var(--o4s-violet) 35%, transparent);
+  }
+
+  .o4s-footer-line::after {
+    content: '';
+    position: absolute;
+    inset: -1px 10% auto;
+    height: 3px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--o4s-cyan) 40%, transparent),
+      color-mix(in srgb, var(--o4s-violet) 40%, transparent),
+      transparent
+    );
+    filter: blur(4px);
+    opacity: 0.7;
+  }
+
+  /* Soften default border so the gradient line owns the edge */
+  .o4s-footer {
+    border-top-color: color-mix(in srgb, var(--o4s-cyan) 14%, var(--o4s-border)) !important;
+  }
+
+  /* ---- Background: grid + noise + ambient glow ---- */
+  .o4s-footer-bg {
+    overflow: hidden;
+  }
+
+  .o4s-footer-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--o4s-cyan) 28%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--o4s-cyan) 28%, transparent) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, black 10%, transparent 70%);
+    opacity: 0.1;
+  }
+
+  .o4s-footer-noise {
+    position: absolute;
+    inset: 0;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+
+  .o4s-footer-glow {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(50% 40% at 20% 0%, color-mix(in srgb, var(--o4s-cyan) 18%, transparent) 0%, transparent 60%),
+      radial-gradient(45% 35% at 85% 10%, color-mix(in srgb, var(--o4s-violet) 16%, transparent) 0%, transparent 55%);
+    pointer-events: none;
+  }
+
+  /* ---- Brand mark ---- */
+  .o4s-footer-brand {
+    letter-spacing: -0.02em;
+    transition:
+      color 0.2s ease,
+      text-shadow 0.25s ease;
+  }
+
+  .o4s-footer-brand:hover {
+    color: var(--o4s-cyan);
+    text-shadow: 0 0 20px color-mix(in srgb, var(--o4s-cyan) 55%, transparent);
+  }
+
+  /* ---- Column titles ---- */
+  .o4s-footer-title {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--o4s-cyan) 75%, var(--aw-color-text-muted));
+  }
+
+  /* ---- Link hover glow ---- */
+  .o4s-footer-link {
+    position: relative;
+    display: inline-block;
+    transition:
+      color 0.2s ease,
+      text-shadow 0.25s ease;
+  }
+
+  .o4s-footer-link:hover,
+  .o4s-footer-link:focus-visible {
+    color: var(--o4s-cyan);
+    text-shadow:
+      0 0 10px color-mix(in srgb, var(--o4s-cyan) 55%, transparent),
+      0 0 22px color-mix(in srgb, var(--o4s-violet) 30%, transparent);
+    text-decoration: none;
+  }
+
+  /* ---- Social icons ---- */
+  .o4s-footer-social {
+    border: 1px solid transparent;
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .o4s-footer-social:hover,
+  .o4s-footer-social:focus-visible {
+    color: var(--o4s-cyan);
+    background: color-mix(in srgb, var(--o4s-cyan) 10%, transparent);
+    border-color: color-mix(in srgb, var(--o4s-cyan) 35%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--o4s-cyan) 12%, transparent),
+      0 0 18px -4px color-mix(in srgb, var(--o4s-cyan) 50%, transparent);
+  }
+
+  /* ---- Mono footNote ---- */
+  .o4s-footer-bottom {
+    border-top: 1px solid color-mix(in srgb, var(--o4s-cyan) 12%, var(--o4s-border));
+  }
+
+  .o4s-footer-note {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    line-height: 1.6;
+    color: var(--aw-color-text-muted);
+  }
+
+  .o4s-footer-note :global(.font-mono) {
+    color: var(--o4s-cyan);
+    text-shadow: 0 0 14px color-mix(in srgb, var(--o4s-cyan) 40%, transparent);
+  }
+
+  .o4s-footer-note :global(.text-muted) {
+    color: color-mix(in srgb, var(--aw-color-text-muted) 90%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .o4s-footer-link,
+    .o4s-footer-brand,
+    .o4s-footer-social {
+      transition: none;
+    }
+  }
+</style>

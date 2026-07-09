@@ -1,0 +1,21 @@
+---
+/**
+ * Bilingual text node. Renders both languages; CSS shows active via html[data-lang].
+ * Prefer for short strings. For HTML-rich content, use two I18n blocks or Dual.
+ */
+import { ui, type UiKey } from '~/i18n/dict';
+
+interface Props {
+  k: UiKey;
+  as?: keyof HTMLElementTagNameMap;
+  class?: string;
+}
+const { k, as: Tag = 'span', class: className = '' } = Astro.props;
+const en = ui.en[k];
+const zh = ui.zh[k];
+---
+
+<Fragment>
+  <Tag class:list={['o4s-i18n-en', className]} set:html={en} />
+  <Tag class:list={['o4s-i18n-zh', className]} set:html={zh} />
+</Fragment>

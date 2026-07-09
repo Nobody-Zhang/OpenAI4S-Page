@@ -1,0 +1,434 @@
+---
+interface Props {
+  size?: number;
+  class?: string;
+  /** subtle | pulse | orbit | none */
+  motion?: 'subtle' | 'pulse' | 'orbit' | 'none';
+  label?: string;
+}
+const { size = 32, class: className = '', motion = 'subtle', label = 'OpenAI4S' } = Astro.props;
+const sid = `bm-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<span
+  class:list={['o4s-brand-mark', `o4s-brand-mark--${motion}`, className]}
+  style={`width:${size}px;height:${size}px`}
+  role="img"
+  aria-label={label}
+>
+  <svg
+    viewBox="0 0 64 64"
+    width={size}
+    height={size}
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+    shape-rendering="geometricPrecision"
+  >
+    <defs>
+      <!-- Core fill: deep space slate -->
+      <linearGradient id={`${sid}-core`} x1="18" y1="20" x2="46" y2="44" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#0c162c" />
+        <stop offset="0.55" stop-color="#060b18" />
+        <stop offset="1" stop-color="#020617" />
+      </linearGradient>
+
+      <!-- Cyan → violet → emerald edge -->
+      <linearGradient id={`${sid}-edge`} x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#e8b860" />
+        <stop offset="0.48" stop-color="#a0afc3" />
+        <stop offset="1" stop-color="#c8d2b4" />
+      </linearGradient>
+
+      <!-- Secondary edge (orbit ring, reverse sweep) -->
+      <linearGradient id={`${sid}-edge2`} x1="56" y1="8" x2="8" y2="56" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#67e8f9" />
+        <stop offset="0.5" stop-color="#c4b5fd" />
+        <stop offset="1" stop-color="#6ee7b7" />
+      </linearGradient>
+
+      <!-- Soft ambient aura -->
+      <radialGradient id={`${sid}-aura`} cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#e8b860" stop-opacity="0.28" />
+        <stop offset="42%" stop-color="#a0afc3" stop-opacity="0.1" />
+        <stop offset="72%" stop-color="#e8b860" stop-opacity="0.04" />
+        <stop offset="100%" stop-color="#e8b860" stop-opacity="0" />
+      </radialGradient>
+
+      <!-- Multi-layer bloom (soft + mid) — for rings/nodes only -->
+      <filter id={`${sid}-glow`} x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="1.1" result="soft" />
+        <feGaussianBlur in="SourceGraphic" stdDeviation="0.45" result="mid" />
+        <feMerge>
+          <feMergeNode in="soft" />
+          <feMergeNode in="mid" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+
+      <!-- Tighter glow for core stroke — keeps glyph readable at 24px -->
+      <filter id={`${sid}-coreGlow`} x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="0.7" result="b" />
+        <feMerge>
+          <feMergeNode in="b" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+
+      <!-- Node hotspots -->
+      <radialGradient id={`${sid}-nodeCyan`} cx="35%" cy="30%" r="65%">
+        <stop offset="0%" stop-color="#ecfeff" />
+        <stop offset="35%" stop-color="#67e8f9" />
+        <stop offset="100%" stop-color="#0891b2" />
+      </radialGradient>
+      <radialGradient id={`${sid}-nodeViolet`} cx="35%" cy="30%" r="65%">
+        <stop offset="0%" stop-color="#f5f3ff" />
+        <stop offset="35%" stop-color="#c4b5fd" />
+        <stop offset="100%" stop-color="#7c3aed" />
+      </radialGradient>
+      <radialGradient id={`${sid}-nodeEm`} cx="35%" cy="30%" r="65%">
+        <stop offset="0%" stop-color="#ecfdf5" />
+        <stop offset="35%" stop-color="#6ee7b7" />
+        <stop offset="100%" stop-color="#059669" />
+      </radialGradient>
+    </defs>
+
+    <!-- Ambient field -->
+    <circle class="o4s-bm-aura" cx="32" cy="32" r="30.5" fill={`url(#${sid}-aura)`} />
+
+    <!-- Outer tech ring (counter-orbits in orbit mode) -->
+    <g class="o4s-bm-outer" filter={`url(#${sid}-glow)`}>
+      <circle
+        cx="32"
+        cy="32"
+        r="28.25"
+        stroke={`url(#${sid}-edge2)`}
+        stroke-width="0.9"
+        stroke-opacity="0.35"
+        stroke-dasharray="3.2 4.6"
+        stroke-linecap="round"
+      />
+      <!-- cardinal ticks -->
+      <path
+        d="M32 3.2v2.6M60.8 32h-2.6M32 60.8v-2.6M3.2 32h2.6"
+        stroke={`url(#${sid}-edge)`}
+        stroke-width="1.15"
+        stroke-linecap="round"
+        stroke-opacity="0.55"
+      />
+    </g>
+
+    <!-- Constellation hex + nodes (smooth orbit group) -->
+    <!-- Regular hex, circumradius 20.5, flat-top starts at top vertex -->
+    <g class="o4s-bm-orbit" filter={`url(#${sid}-glow)`}>
+      <path
+        class="o4s-bm-link"
+        d="M32 11.5 L49.75 21.75 L49.75 42.25 L32 52.5 L14.25 42.25 L14.25 21.75 Z"
+        stroke={`url(#${sid}-edge)`}
+        stroke-width="1.15"
+        stroke-opacity="0.5"
+        stroke-linejoin="miter"
+        fill="none"
+      />
+      <!-- inner faint brace -->
+      <path
+        class="o4s-bm-link-inner"
+        d="M32 16.5 L45.5 24.3 L45.5 39.7 L32 47.5 L18.5 39.7 L18.5 24.3 Z"
+        stroke={`url(#${sid}-edge2)`}
+        stroke-width="0.7"
+        stroke-opacity="0.22"
+        fill="none"
+      />
+
+      <!-- Nodes: outer g = position (SVG), inner g = pulse scale (CSS; no attr conflict) -->
+      <g transform="translate(32 11.5)">
+        <g class="o4s-bm-node o4s-bm-node-a">
+          <circle r="3.35" fill={`url(#${sid}-nodeCyan)`} />
+          <circle r="1.15" fill="#ecfeff" fill-opacity="0.95" />
+        </g>
+      </g>
+      <g transform="translate(49.75 21.75)">
+        <g class="o4s-bm-node o4s-bm-node-b">
+          <circle r="3.35" fill={`url(#${sid}-nodeViolet)`} />
+          <circle r="1.15" fill="#f5f3ff" fill-opacity="0.95" />
+        </g>
+      </g>
+      <g transform="translate(49.75 42.25)">
+        <g class="o4s-bm-node o4s-bm-node-c">
+          <circle r="3.35" fill={`url(#${sid}-nodeCyan)`} />
+          <circle r="1.15" fill="#ecfeff" fill-opacity="0.95" />
+        </g>
+      </g>
+      <g transform="translate(32 52.5)">
+        <g class="o4s-bm-node o4s-bm-node-d">
+          <circle r="3.35" fill={`url(#${sid}-nodeEm)`} />
+          <circle r="1.15" fill="#ecfdf5" fill-opacity="0.95" />
+        </g>
+      </g>
+      <g transform="translate(14.25 42.25)">
+        <g class="o4s-bm-node o4s-bm-node-e">
+          <circle r="3.35" fill={`url(#${sid}-nodeViolet)`} />
+          <circle r="1.15" fill="#f5f3ff" fill-opacity="0.95" />
+        </g>
+      </g>
+      <g transform="translate(14.25 21.75)">
+        <g class="o4s-bm-node o4s-bm-node-f">
+          <circle r="3.35" fill={`url(#${sid}-nodeCyan)`} />
+          <circle r="1.15" fill="#ecfeff" fill-opacity="0.95" />
+        </g>
+      </g>
+    </g>
+
+    <!-- Core terminal tile — unfiltered glyph paths for crisp 24–96px rendering -->
+    <g class="o4s-bm-core">
+      <!-- Soft outer glow shell (blurred, separate from glyph) -->
+      <rect
+        x="19.5"
+        y="21.5"
+        width="25"
+        height="21"
+        rx="4.25"
+        stroke={`url(#${sid}-edge)`}
+        stroke-width="2.2"
+        stroke-opacity="0.35"
+        fill="none"
+        filter={`url(#${sid}-coreGlow)`}
+      />
+      <!-- Hard plate -->
+      <rect
+        x="20"
+        y="22"
+        width="24"
+        height="20"
+        rx="4"
+        fill={`url(#${sid}-core)`}
+        stroke={`url(#${sid}-edge)`}
+        stroke-width="1.35"
+      />
+      <!-- Corner micro-brackets (sci-fi HUD) -->
+      <path
+        d="M23 25.2h2.4M23 25.2v2.4M41 25.2h-2.4M41 25.2v2.4M23 38.8h2.4M23 38.8v-2.4M41 38.8h-2.4M41 38.8v-2.4"
+        stroke="#67e8f9"
+        stroke-width="1"
+        stroke-linecap="square"
+        stroke-opacity="0.55"
+      />
+      <!-- Chevron prompt — integer-friendly geometry, no blur -->
+      <path
+        class="o4s-bm-chevron"
+        d="M27 28.5 L32.25 32 L27 35.5"
+        stroke="#e8b860"
+        stroke-width="2.25"
+        stroke-linecap="square"
+        stroke-linejoin="miter"
+      />
+      <!-- Underscore cursor -->
+      <rect class="o4s-bm-cursor" x="35.25" y="34.85" width="5.75" height="1.9" rx="0.45" fill="#f4f2ee" />
+    </g>
+  </svg>
+</span>
+
+<style>
+  .o4s-brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 0;
+  }
+  .o4s-brand-mark svg {
+    display: block;
+    overflow: visible;
+  }
+
+  /* view-box + center = smooth SVG rotation (no pixel-origin drift) */
+  .o4s-bm-orbit,
+  .o4s-bm-outer,
+  .o4s-bm-aura {
+    transform-box: view-box;
+    transform-origin: 50% 50%;
+  }
+  /* fill-box so node scale pulses around each hotspot, not the full mark */
+  .o4s-bm-node {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  /* —— cursor blink —— */
+  .o4s-brand-mark--subtle .o4s-bm-cursor,
+  .o4s-brand-mark--pulse .o4s-bm-cursor,
+  .o4s-brand-mark--orbit .o4s-bm-cursor {
+    animation: o4s-bm-blink 1.2s steps(1, end) infinite;
+  }
+
+  /* —— node breath (opacity + scale only — no filter animation) —— */
+  .o4s-brand-mark--subtle .o4s-bm-node,
+  .o4s-brand-mark--pulse .o4s-bm-node,
+  .o4s-brand-mark--orbit .o4s-bm-node {
+    animation: o4s-bm-node-pulse 2.8s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+  .o4s-brand-mark--subtle .o4s-bm-node-b,
+  .o4s-brand-mark--pulse .o4s-bm-node-b,
+  .o4s-brand-mark--orbit .o4s-bm-node-b {
+    animation-delay: 0.35s;
+  }
+  .o4s-brand-mark--subtle .o4s-bm-node-c,
+  .o4s-brand-mark--pulse .o4s-bm-node-c,
+  .o4s-brand-mark--orbit .o4s-bm-node-c {
+    animation-delay: 0.7s;
+  }
+  .o4s-brand-mark--subtle .o4s-bm-node-d,
+  .o4s-brand-mark--pulse .o4s-bm-node-d,
+  .o4s-brand-mark--orbit .o4s-bm-node-d {
+    animation-delay: 1.05s;
+  }
+  .o4s-brand-mark--subtle .o4s-bm-node-e,
+  .o4s-brand-mark--pulse .o4s-bm-node-e,
+  .o4s-brand-mark--orbit .o4s-bm-node-e {
+    animation-delay: 1.4s;
+  }
+  .o4s-brand-mark--subtle .o4s-bm-node-f,
+  .o4s-brand-mark--pulse .o4s-bm-node-f,
+  .o4s-brand-mark--orbit .o4s-bm-node-f {
+    animation-delay: 1.75s;
+  }
+
+  /* —— subtle: faint aura breath —— */
+  .o4s-brand-mark--subtle .o4s-bm-aura {
+    animation: o4s-bm-aura-soft 4.5s ease-in-out infinite;
+  }
+
+  /* —— pulse: stronger aura + link shimmer —— */
+  .o4s-brand-mark--pulse .o4s-bm-aura {
+    animation: o4s-bm-aura 3s ease-in-out infinite;
+  }
+  .o4s-brand-mark--pulse .o4s-bm-link {
+    animation: o4s-bm-link-pulse 3s ease-in-out infinite;
+  }
+  .o4s-brand-mark--pulse .o4s-bm-outer {
+    animation: o4s-bm-outer-breathe 3s ease-in-out infinite;
+  }
+
+  /* —— orbit: smooth dual-ring spin; core stays fixed —— */
+  .o4s-brand-mark--orbit .o4s-bm-orbit {
+    animation: o4s-bm-spin 16s linear infinite;
+    will-change: transform;
+  }
+  .o4s-brand-mark--orbit .o4s-bm-outer {
+    animation: o4s-bm-spin-rev 28s linear infinite;
+    will-change: transform;
+  }
+  .o4s-brand-mark--orbit .o4s-bm-aura {
+    animation: o4s-bm-aura-soft 5s ease-in-out infinite;
+  }
+  /* softer node breath while orbiting so motion stays clean */
+  .o4s-brand-mark--orbit .o4s-bm-node {
+    animation-duration: 3.6s;
+  }
+
+  @keyframes o4s-bm-blink {
+    0%,
+    45% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes o4s-bm-node-pulse {
+    0%,
+    100% {
+      opacity: 0.72;
+      transform: scale(0.88);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.06);
+    }
+  }
+
+  @keyframes o4s-bm-aura-soft {
+    0%,
+    100% {
+      opacity: 0.7;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes o4s-bm-aura {
+    0%,
+    100% {
+      opacity: 0.55;
+      transform: scale(0.94);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.08);
+    }
+  }
+
+  @keyframes o4s-bm-link-pulse {
+    0%,
+    100% {
+      stroke-opacity: 0.38;
+    }
+    50% {
+      stroke-opacity: 0.72;
+    }
+  }
+
+  @keyframes o4s-bm-outer-breathe {
+    0%,
+    100% {
+      opacity: 0.75;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes o4s-bm-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes o4s-bm-spin-rev {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(-360deg);
+    }
+  }
+
+  /* Static clean mark — no motion */
+  @media (prefers-reduced-motion: reduce) {
+    .o4s-brand-mark .o4s-bm-cursor,
+    .o4s-brand-mark .o4s-bm-node,
+    .o4s-brand-mark .o4s-bm-aura,
+    .o4s-brand-mark .o4s-bm-orbit,
+    .o4s-brand-mark .o4s-bm-outer,
+    .o4s-brand-mark .o4s-bm-link,
+    .o4s-brand-mark .o4s-bm-core {
+      animation: none !important;
+      will-change: auto !important;
+    }
+    .o4s-brand-mark .o4s-bm-node {
+      opacity: 1;
+      transform: none;
+    }
+    .o4s-brand-mark .o4s-bm-aura {
+      opacity: 0.85;
+      transform: none;
+    }
+  }
+</style>

@@ -1,0 +1,362 @@
+---
+interface Props {
+  providers?: string[];
+  class?: string;
+}
+
+const DEFAULT_PROVIDERS = ['doubao', 'glm', 'kimi', 'deepseek', 'minimax', 'chatgpt', 'claude', 'gemini'];
+
+const { providers = DEFAULT_PROVIDERS, class: className = '' } = Astro.props;
+const n = providers.length;
+---
+
+<div
+  class:list={['o4s-orbit', className]}
+  style={`--o4s-orbit-n: ${n}`}
+  role="group"
+  aria-label={`LLM providers behind host.llm: ${providers.join(', ')}`}
+>
+  <!-- Animated radial HUD (hidden under reduced motion) -->
+  <div class="o4s-orbit__stage" aria-hidden="true">
+    <div class="o4s-orbit__halo o4s-orbit__halo--outer"></div>
+    <div class="o4s-orbit__halo o4s-orbit__halo--mid"></div>
+    <div class="o4s-orbit__halo o4s-orbit__halo--inner"></div>
+    <div class="o4s-orbit__ticks"></div>
+
+    <div class="o4s-orbit__spin">
+      {
+        providers.map((name, i) => (
+          <span class="o4s-orbit__slot" style={`--o4s-orbit-i: ${i}`}>
+            <span class="o4s-orbit__node">
+              <span class="o4s-orbit__dot" />
+              <span class="o4s-orbit__label">{name}</span>
+            </span>
+          </span>
+        ))
+      }
+    </div>
+
+    <div class="o4s-orbit__core">
+      <span class="o4s-orbit__core-ring"></span>
+      <span class="o4s-orbit__core-label">
+        <span class="o4s-orbit__core-dot"></span>
+        host.llm
+      </span>
+      <span class="o4s-orbit__core-sub">{n} providers</span>
+    </div>
+  </div>
+
+  <!-- Static grid fallback for reduced-motion / screen readers -->
+  <ul class="o4s-orbit__grid">
+    {
+      providers.map((name) => (
+        <li>
+          <span class="o4s-pill">{name}</span>
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<style>
+  .o4s-orbit {
+    --o4s-orbit-size: min(100%, 28rem);
+    --o4s-orbit-radius: clamp(5.75rem, 28vw, 9.25rem);
+    --o4s-orbit-duration: 48s;
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .o4s-orbit__stage {
+    position: relative;
+    width: var(--o4s-orbit-size);
+    aspect-ratio: 1;
+    max-width: 28rem;
+    margin-inline: auto;
+    display: grid;
+    place-items: center;
+    isolation: isolate;
+  }
+
+  /* Concentric HUD rings */
+  .o4s-orbit__halo {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    border-radius: 9999px;
+    pointer-events: none;
+    translate: -50% -50%;
+    border: 1px solid color-mix(in srgb, var(--o4s-cyan) 22%, transparent);
+  }
+  .o4s-orbit__halo--outer {
+    width: calc(var(--o4s-orbit-radius) * 2 + 3.5rem);
+    height: calc(var(--o4s-orbit-radius) * 2 + 3.5rem);
+    border-style: dashed;
+    border-color: color-mix(in srgb, var(--o4s-violet) 28%, transparent);
+    opacity: 0.7;
+    box-shadow:
+      0 0 40px -12px var(--o4s-glow-strong),
+      inset 0 0 40px -18px color-mix(in srgb, var(--o4s-violet) 25%, transparent);
+  }
+  .o4s-orbit__halo--mid {
+    width: calc(var(--o4s-orbit-radius) * 2);
+    height: calc(var(--o4s-orbit-radius) * 2);
+    border-color: color-mix(in srgb, var(--o4s-cyan) 35%, transparent);
+    box-shadow:
+      0 0 28px -10px var(--o4s-glow-strong),
+      inset 0 0 24px -12px color-mix(in srgb, var(--o4s-cyan) 30%, transparent);
+  }
+  .o4s-orbit__halo--inner {
+    width: 7.5rem;
+    height: 7.5rem;
+    border-color: color-mix(in srgb, var(--o4s-neon) 30%, transparent);
+    background:
+      radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--o4s-cyan) 12%, transparent) 0%, transparent 70%),
+      color-mix(in srgb, var(--o4s-surface) 40%, transparent);
+  }
+
+  /* Tick marks on the mid ring */
+  .o4s-orbit__ticks {
+    position: absolute;
+    width: calc(var(--o4s-orbit-radius) * 2);
+    height: calc(var(--o4s-orbit-radius) * 2);
+    border-radius: 9999px;
+    pointer-events: none;
+    background: repeating-conic-gradient(
+      from 0deg,
+      color-mix(in srgb, var(--o4s-cyan) 45%, transparent) 0deg 0.6deg,
+      transparent 0.6deg 15deg
+    );
+    mask-image: radial-gradient(circle, transparent calc(50% - 1px), #000 calc(50% - 1px), #000 50%, transparent 50%);
+    opacity: 0.55;
+  }
+
+  /* Spinning provider ring */
+  .o4s-orbit__spin {
+    position: absolute;
+    inset: 0;
+    animation: o4s-orbit-spin var(--o4s-orbit-duration) linear infinite;
+  }
+
+  .o4s-orbit:hover .o4s-orbit__spin,
+  .o4s-orbit:focus-within .o4s-orbit__spin {
+    animation-play-state: paused;
+  }
+  .o4s-orbit:hover .o4s-orbit__node,
+  .o4s-orbit:focus-within .o4s-orbit__node {
+    animation-play-state: paused;
+  }
+
+  .o4s-orbit__slot {
+    --angle: calc((360deg / var(--o4s-orbit-n)) * var(--o4s-orbit-i));
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0;
+    height: 0;
+    transform: rotate(var(--angle)) translateY(calc(var(--o4s-orbit-radius) * -1));
+  }
+
+  .o4s-orbit__node {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transform: translate(-50%, -50%) rotate(calc(var(--angle) * -1));
+    animation: o4s-orbit-counter var(--o4s-orbit-duration) linear infinite;
+    white-space: nowrap;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    padding: 0.4rem 0.85rem 0.4rem 0.55rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--o4s-cyan) 30%, var(--o4s-border));
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--o4s-cyan) 10%, transparent), transparent),
+      color-mix(in srgb, var(--o4s-surface-solid) 88%, transparent);
+    color: var(--aw-color-text-default);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--o4s-cyan) 6%, transparent),
+      0 4px 18px -10px color-mix(in srgb, var(--o4s-cyan) 50%, transparent);
+    backdrop-filter: blur(8px);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .o4s-orbit__slot:nth-child(even) .o4s-orbit__node {
+    border-color: color-mix(in srgb, var(--o4s-violet) 32%, var(--o4s-border));
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--o4s-violet) 8%, transparent),
+      0 4px 18px -10px color-mix(in srgb, var(--o4s-violet) 40%, transparent);
+  }
+
+  .o4s-orbit:hover .o4s-orbit__node:hover {
+    border-color: var(--aw-color-primary);
+    color: var(--aw-color-primary);
+    box-shadow:
+      0 0 0 3px var(--o4s-glow),
+      0 0 24px -6px var(--o4s-glow-strong);
+  }
+
+  .o4s-orbit__dot {
+    width: 0.42rem;
+    height: 0.42rem;
+    border-radius: 9999px;
+    flex-shrink: 0;
+    background: var(--o4s-cyan);
+    box-shadow: 0 0 8px var(--o4s-cyan);
+  }
+  .o4s-orbit__slot:nth-child(even) .o4s-orbit__dot {
+    background: var(--o4s-violet);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--o4s-violet) 80%, transparent);
+  }
+  .o4s-orbit__slot:nth-child(3n) .o4s-orbit__dot {
+    background: var(--o4s-neon);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--o4s-neon) 80%, transparent);
+  }
+
+  .o4s-orbit__label {
+    line-height: 1;
+  }
+
+  /* Center host.llm hub */
+  .o4s-orbit__core {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: 6.5rem;
+    height: 6.5rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--o4s-cyan) 40%, var(--o4s-border));
+    background:
+      radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--o4s-cyan) 18%, transparent), transparent 60%),
+      color-mix(in srgb, var(--o4s-surface-solid) 92%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--o4s-cyan) 10%, transparent),
+      0 0 36px -8px var(--o4s-glow-strong),
+      inset 0 0 20px -8px color-mix(in srgb, var(--o4s-cyan) 25%, transparent);
+    backdrop-filter: blur(10px);
+  }
+
+  .o4s-orbit__core-ring {
+    position: absolute;
+    inset: -0.35rem;
+    border-radius: 9999px;
+    border: 1px dashed color-mix(in srgb, var(--o4s-violet) 35%, transparent);
+    animation: o4s-orbit-spin calc(var(--o4s-orbit-duration) * 1.6) linear infinite reverse;
+    pointer-events: none;
+  }
+  .o4s-orbit:hover .o4s-orbit__core-ring,
+  .o4s-orbit:focus-within .o4s-orbit__core-ring {
+    animation-play-state: paused;
+  }
+
+  .o4s-orbit__core-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--aw-color-primary);
+    text-shadow: 0 0 14px var(--o4s-glow-strong);
+  }
+
+  .o4s-orbit__core-dot {
+    width: 0.38rem;
+    height: 0.38rem;
+    border-radius: 9999px;
+    background: var(--o4s-neon);
+    box-shadow: 0 0 10px var(--o4s-neon);
+    animation: o4s-orbit-pulse 2s ease-in-out infinite;
+  }
+
+  .o4s-orbit__core-sub {
+    font-family: var(--aw-font-mono), ui-monospace, monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--aw-color-text-muted);
+    opacity: 0.9;
+  }
+
+  /* Default: hide static grid; show orbit stage */
+  .o4s-orbit__grid {
+    display: none;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    justify-content: center;
+    max-width: 40rem;
+  }
+
+  @keyframes o4s-orbit-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes o4s-orbit-counter {
+    to {
+      transform: translate(-50%, -50%) rotate(calc(var(--angle) * -1 - 360deg));
+    }
+  }
+  @keyframes o4s-orbit-pulse {
+    0%,
+    100% {
+      opacity: 0.7;
+      transform: scale(0.92);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.12);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .o4s-orbit {
+      --o4s-orbit-radius: clamp(5.25rem, 34vw, 7rem);
+    }
+    .o4s-orbit__node {
+      font-size: 0.68rem;
+      padding: 0.32rem 0.65rem 0.32rem 0.45rem;
+    }
+    .o4s-orbit__core {
+      width: 5.5rem;
+      height: 5.5rem;
+    }
+    .o4s-orbit__core-label {
+      font-size: 0.64rem;
+    }
+    .o4s-orbit__halo--inner {
+      width: 6.25rem;
+      height: 6.25rem;
+    }
+  }
+
+  /* Reduced motion: static pill grid, no spinning HUD */
+  @media (prefers-reduced-motion: reduce) {
+    .o4s-orbit__stage {
+      display: none;
+    }
+    .o4s-orbit__grid {
+      display: flex;
+    }
+    .o4s-orbit__spin,
+    .o4s-orbit__node,
+    .o4s-orbit__core-ring,
+    .o4s-orbit__core-dot {
+      animation: none !important;
+    }
+  }
+</style>

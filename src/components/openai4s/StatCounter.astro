@@ -1,0 +1,200 @@
+---
+interface Props {
+  /** Display value: numeric ("24"), prefixed ("¥9.9"), or static ("MIT"). */
+  value: string;
+  label: string;
+  /** Count-up duration in ms. Default 1400. */
+  duration?: number;
+  class?: string;
+}
+const { value, label, duration = 1400, class: className = '' } = Astro.props;
+---
+
+<div
+  class:list={['o4s-stat-counter', className]}
+  data-o4s-stat-counter
+  data-value={value}
+  data-duration={String(duration)}
+>
+  <div class="o4s-stat-counter__value" data-o4s-stat-display aria-hidden="true">{value}</div>
+  <span class="o4s-stat-counter__sr">{value} — {label}</span>
+  <div class="o4s-stat-counter__label">{label}</div>
+</div>
+
+<script>
+  type Parsed = {
+    prefix: string;
+    number: number | null;
+    suffix: string;
+    decimals: number;
+  };
+
+  const parseValue = (raw: string): Parsed => {
+    const m = raw.trim().match(/^([^\d-]*)(-?\d+(?:[.,]\d+)?)(.*)$/);
+    if (!m) {
+      return { prefix: '', number: null, suffix: raw, decimals: 0 };
+    }
+    const numStr = m[2].replace(',', '.');
+    const decimals = (numStr.split('.')[1] || '').length;
+    return {
+      prefix: m[1],
+      number: Number.parseFloat(numStr),
+      suffix: m[3],
+      decimals,
+    };
+  };
+
+  const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
+
+  const format = (n: number, decimals: number) => {
+    if (decimals <= 0) return String(Math.round(n));
+    return n.toFixed(decimals);
+  };
+
+  const prefersReduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const animate = (el: HTMLElement, target: string, duration: number) => {
+    const display = el.querySelector<HTMLElement>('[data-o4s-stat-display]');
+    if (!display) return;
+
+    const parsed = parseValue(target);
+
+    // Non-numeric (e.g. "MIT") — show immediately, optional soft fade via class
+    if (parsed.number === null || Number.isNaN(parsed.number)) {
+      display.textContent = target;
+      el.classList.add('is-done');
+      return;
+    }
+
+    if (prefersReduced() || duration <= 0) {
+      display.textContent = target;
+      el.classList.add('is-done');
+      return;
+    }
+
+    const { prefix, number, suffix, decimals } = parsed;
+    const start = performance.now();
+    display.textContent = `${prefix}${format(0, decimals)}${suffix}`;
+
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const current = number * easeOutCubic(t);
+      display.textContent = `${prefix}${format(current, decimals)}${suffix}`;
+      if (t < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        display.textContent = target;
+        el.classList.add('is-done');
+      }
+    };
+
+    requestAnimationFrame(tick);
+  };
+
+  const init = (root: ParentNode = document) => {
+    const nodes = root.querySelectorAll<HTMLElement>('[data-o4s-stat-counter]:not([data-o4s-stat-ready])');
+    if (!nodes.length) return;
+
+    nodes.forEach((el) => {
+      el.setAttribute('data-o4s-stat-ready', '');
+      const value = el.dataset.value ?? '';
+      const duration = Number(el.dataset.duration || 1400);
+      const display = el.querySelector<HTMLElement>('[data-o4s-stat-display]');
+
+      if (!display) return;
+
+      if (prefersReduced()) {
+        display.textContent = value;
+        el.classList.add('is-done');
+        return;
+      }
+
+      const parsed = parseValue(value);
+      if (parsed.number !== null && !Number.isNaN(parsed.number)) {
+        display.textContent = `${parsed.prefix}${format(0, parsed.decimals)}${parsed.suffix}`;
+      }
+
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            io.disconnect();
+            animate(el, value, duration);
+          }
+        },
+        { threshold: 0.35, rootMargin: '0px 0px -8% 0px' }
+      );
+
+      io.observe(el);
+    });
+  };
+
+  init();
+  document.addEventListener('astro:page-load', () => init());
+</script>
+
+<style>
+  .o4s-stat-counter {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.5rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid color-mix(in srgb, var(--o4s-cyan, #22d3ee) 18%, var(--o4s-border, #1e293b));
+    background: color-mix(in srgb, var(--o4s-surface, #0f172a) 90%, transparent);
+    backdrop-filter: blur(8px);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+    text-align: center;
+  }
+
+  .o4s-stat-counter:hover {
+    border-color: color-mix(in srgb, var(--o4s-cyan, #22d3ee) 45%, var(--o4s-border, #1e293b));
+    box-shadow: 0 0 32px -12px var(--o4s-glow-strong, rgba(34, 211, 238, 0.55));
+  }
+
+  .o4s-stat-counter__value {
+    font-family: var(--aw-font-heading), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, var(--o4s-cyan, #22d3ee), var(--o4s-violet, #a78bfa));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    min-height: 1.15em;
+  }
+
+  .o4s-stat-counter__label {
+    font-family: var(--aw-font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--aw-color-text-muted, #94a3b8);
+  }
+
+  .o4s-stat-counter__sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .o4s-stat-counter {
+      transition: none;
+    }
+  }
+</style>
