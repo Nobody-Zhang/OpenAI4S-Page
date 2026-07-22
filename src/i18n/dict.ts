@@ -316,8 +316,9 @@ export const ui = {
     cred:
       '独立复现 Code-as-Action 范式（参见 Claude Science、CodeAct、ReAct）。科学 Skills 建立在 ColabFold / AlphaFold、ESM、OpenFold、Boltz、Chai、ProteinMPNN、DiffDock、Evo2、Borzoi、scGPT、scVI-tools 以及开放数据（NCBI、UniProt、RCSB PDB、EBI、OpenAlex、Crossref）之上。',
     cta_type: '代码即行动 · 内核即环境',
-    cta_title_a: '用两次切割',
-    cta_title_b: '复现 Claude Science。',
+    // "two cuts" ≈ 两刀钱 (cheap RMB slang), not "切割"
+    cta_title_a: '两刀钱，',
+    cta_title_b: '复刻 Claude Science。',
     cta_arch: '阅读架构',
     cta_foot: 'openai4s.org · MIT · 给科学家的开放 AI',
 
