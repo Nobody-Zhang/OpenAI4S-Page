@@ -178,7 +178,7 @@ export const ui = {
       'Independently reproduces the Code-as-Action paradigm (cf. Claude Science, CodeAct, ReAct). Science Skills stand on ColabFold / AlphaFold, ESM, OpenFold, Boltz, Chai, ProteinMPNN, DiffDock, Evo2, Borzoi, scGPT, scVI-tools and open data (NCBI, UniProt, RCSB PDB, EBI, OpenAlex, Crossref).',
     cta_type: 'code is the action · the kernel is the environment',
     cta_title_a: 'Replicate Claude Science',
-    cta_title_b: 'in two cuts.',
+    cta_title_b: 'for under two dollars.',
     cta_arch: 'Read the architecture',
     cta_foot: 'openai4s.org · MIT · Open AI for Scientist',
 
@@ -316,8 +316,8 @@ export const ui = {
     cred:
       '独立复现 Code-as-Action 范式（参见 Claude Science、CodeAct、ReAct）。科学 Skills 建立在 ColabFold / AlphaFold、ESM、OpenFold、Boltz、Chai、ProteinMPNN、DiffDock、Evo2、Borzoi、scGPT、scVI-tools 以及开放数据（NCBI、UniProt、RCSB PDB、EBI、OpenAlex、Crossref）之上。',
     cta_type: '代码即行动 · 内核即环境',
-    // "two cuts" ≈ 两刀钱 (cheap RMB slang), not "切割"
-    cta_title_a: '两刀钱，',
+    // "two cuts" ≈ under ~US$2 (¥9.9/mo ≈ US$1.4), not "切割"
+    cta_title_a: '用少于两美元的价格，',
     cta_title_b: '复刻 Claude Science。',
     cta_arch: '阅读架构',
     cta_foot: 'openai4s.org · MIT · 给科学家的开放 AI',
